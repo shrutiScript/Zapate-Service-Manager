@@ -1,0 +1,28 @@
+{
+  "name": "repair-shop-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "start": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.13.6",
+    "clsx": "^2.1.1",
+    "html2pdf.js": "^0.14.0",
+    "jsbarcode": "^3.12.3",
+    "lucide-react": "^1.16.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.5.4",
+    "wouter": "^3.7.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.4.1",
+    "vite": "^7.3.6"
+  }
+}

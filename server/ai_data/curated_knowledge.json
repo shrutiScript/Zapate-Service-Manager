@@ -1,0 +1,69 @@
+{
+  "version": "1.0.0",
+  "knowledge_entries": [
+    {
+      "id": "KB_IPHONE_TRISTAR_HYDRA",
+      "device_brand": "Apple",
+      "device_series": ["iPhone 7", "iPhone 8", "iPhone X", "iPhone 11", "iPhone 12", "iPhone 13", "iPhone 14"],
+      "category": "CHARGING_SUB_SYSTEM",
+      "title": "USB Controller IC (Tristar/Hydra/Tigris) Diagnostic Standard",
+      "source_name": "Curated Board-Level Engineering Manual",
+      "source_type": "General repair knowledge",
+      "last_verified": "2026-02-15",
+      "summary": "Non-MFi knockoff car chargers generate voltage spikes that blow the primary 5V clamp diode inside Hydra/Tristar IC, resulting in 1% battery freeze or high standby leakage.",
+      "critical_checks": [
+        "Test current draw with USB Power Meter; 0.00A or cycling 0.04A - 0.24A indicates damaged Hydra IC",
+        "Measure diode mode on Tristar test points (PP_VBUS2_PIN1, USB_PROT_DP/DN)",
+        "Always replace with correct IC revision (1610A1/A2/A3 or 1612A1) and use 0.02mm insulated jumper if solder pad delaminates"
+      ]
+    },
+    {
+      "id": "KB_SAMSUNG_SUB_BOARD_FPC",
+      "device_brand": "Samsung",
+      "device_series": ["Galaxy A50", "Galaxy A51", "Galaxy A52", "Galaxy A53", "Galaxy A54", "Galaxy S20", "Galaxy S21", "Galaxy S22"],
+      "category": "CHARGING_SUB_SYSTEM",
+      "title": "Main FPC Interconnect Flex Solder Joint Separation",
+      "source_name": "Curated Workshop Hardware Bulletin",
+      "source_type": "Workshop historical evidence",
+      "last_verified": "2026-01-20",
+      "summary": "Drop impacts on Galaxy A-series and S-series frequently crack the surface solder joints on the mainboard-side 78-pin FPC charging connector, causing 'moisture detected in charging port' or slow charge warnings even when port is completely dry.",
+      "critical_checks": [
+        "Under microscope, push gently on FPC connector pins with needle probe to check for loose solder joints",
+        "Reflow connector with micro-soldering pencil and leaded solder at 320°C before replacing entire motherboard",
+        "Verify 5.0V VBUS reaches upper mainboard charging IC"
+      ]
+    },
+    {
+      "id": "KB_LIQUID_DAMAGE_REMEDIATION",
+      "device_brand": "All",
+      "device_series": ["All"],
+      "category": "LIQUID_DAMAGE",
+      "title": "Electro-Chemical Corrosion Neutralization & Safe Power Up Protocol",
+      "source_name": "Standard Mobile Hardware Safety Protocol",
+      "source_type": "General repair knowledge",
+      "last_verified": "2026-02-01",
+      "summary": "Applying power to a wet motherboard initiates galvanic corrosion that destroys copper traces within seconds. Immediate desoldering of shields, ultrasonic IPA bath, and heat-cured dehydration are mandatory prior to any power injection.",
+      "critical_checks": [
+        "Never attempt to power on with charger before full ultrasonic cleaning and dehydrating bake",
+        "Check diode readings on all major buck-regulator coils to identify shorted bypass capacitors",
+        "Coat repaired board areas with conformal UV mask to seal bare copper"
+      ]
+    },
+    {
+      "id": "KB_BATTERY_THERMAL_SAFETY",
+      "device_brand": "All",
+      "device_series": ["All"],
+      "category": "POWER_STORAGE_SAFETY",
+      "title": "Lithium-Ion Pouch Puncture & Thermal Runaway Mitigation",
+      "source_name": "Workshop Environmental & Safety Guideline",
+      "source_type": "General repair knowledge",
+      "last_verified": "2026-02-10",
+      "summary": "Damaged or bloated lithium-ion cells can enter self-sustaining exothermic thermal runaway (> 500°C within 15 seconds) if punctured with metal tools or heated over 80°C.",
+      "critical_checks": [
+        "Never use metal tweezers, blades, or sharp pry tools directly under battery pouch",
+        "Use 99% IPA around battery perimeter to dissolve adhesive bonds without excessive mechanical pulling",
+        "Keep Class D fire extinguishing sand container within 2 meters of the disassembly workbench"
+      ]
+    }
+  ]
+}

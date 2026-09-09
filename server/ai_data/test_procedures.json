@@ -1,0 +1,176 @@
+{
+  "version": "1.0.0",
+  "test_procedures": {
+    "TEST_USB_AMMETER_CURRENT_DRAW": {
+      "name": "USB Power Delivery / Ammeter Current Draw Measurement",
+      "tool_required": "USB-C/Lightning Digital Power Meter (FNIRSI / Sunshine)",
+      "category": "ELECTRICAL_INSPECTION",
+      "procedure": "Connect phone to 5V/9V digital USB meter. Observe initial current handshake.",
+      "expected_reading": "0.90A - 2.20A stable charging current (5V or 9V PD/QC).",
+      "fail_condition": "0.000A draw (open line / blown fuse) or < 0.150A (fake charge / dead PMIC).",
+      "bench_time_minutes": 2
+    },
+    "TEST_CHARGING_PORT_MICROSCOPE_PIN_CHECK": {
+      "name": "Microscope Visual Inspection of Charging Port Pins",
+      "tool_required": "Stereo Microscope (7X - 45X) or Optical Loupe",
+      "category": "PHYSICAL_INSPECTION",
+      "procedure": "Inspect CC1/CC2, VBUS, D+, D-, and GND spring contacts for corrosion, bent pins, or lint obstruction.",
+      "expected_reading": "Straight, clean gold-plated spring contacts with zero foreign debris.",
+      "fail_condition": "Bent/broken spring contacts or black carbon/oxide deposits.",
+      "bench_time_minutes": 3
+    },
+    "TEST_SUB_BOARD_FLEX_CONTINUITY": {
+      "name": "Sub-Board Interconnect Flex Cable Continuity Test",
+      "tool_required": "Digital Multimeter (Continuity / Beeper Mode)",
+      "category": "CONTINUITY_TEST",
+      "procedure": "Probe test points on sub-board and corresponding pins on mainboard FPC connector.",
+      "expected_reading": "< 1.5 Ohms resistance (clean continuous beep).",
+      "fail_condition": "Infinite resistance (OL) indicating severed trace in flexible cable.",
+      "bench_time_minutes": 5
+    },
+    "TEST_DIODE_MODE_VBUS_LINE": {
+      "name": "Diode Mode Value Test on VBUS / Primary Charging Rail",
+      "tool_required": "Digital Multimeter in Diode Mode (Red probe to Ground, Black probe to Test Point)",
+      "category": "DIODE_MODE_TEST",
+      "procedure": "Place Red probe on motherboard ground shield. Place Black probe on VBUS test point / capacitor.",
+      "expected_reading": "0.450V to 0.650V drop across silicon junction.",
+      "fail_condition": "0.000V (dead short to ground) or OL (broken trace / open filter).",
+      "bench_time_minutes": 5
+    },
+    "TEST_THERMAL_CAMERA_BOARD_SWEEP": {
+      "name": "Thermal Imaging Camera Power Rail Fault Localization",
+      "tool_required": "Infrared Thermal Camera (InfiRay / Seek Thermal / QianLi)",
+      "category": "THERMAL_LOCALIZATION",
+      "procedure": "Inject 3.8V - 4.2V current-limited (1.5A) to battery rail and observe thermal heatmap hotspot.",
+      "expected_reading": "Ambient temperature (< 35°C) across all components on standby.",
+      "fail_condition": "Single capacitor or IC rapidly spikes to > 65°C - 100°C within 3 seconds.",
+      "bench_time_minutes": 8
+    },
+    "TEST_BATTERY_INTERNAL_RESISTANCE_AND_CYCLES": {
+      "name": "Battery Cell Health & Internal Resistance Analysis",
+      "tool_required": "Battery Diagnostic Tool (i2C / JCID / QianLi) or Multimeter",
+      "category": "BATTERY_TEST",
+      "procedure": "Connect battery flex to test box or measure terminal voltage under 1A load.",
+      "expected_reading": "> 80% maximum capacity, < 500 charge cycles, internal resistance < 45mΩ.",
+      "fail_condition": "< 75% capacity, > 800 cycles, or resistance > 90mΩ.",
+      "bench_time_minutes": 4
+    },
+    "TEST_BATTERY_VOLTAGE_LOAD_DROP": {
+      "name": "Battery Open-Circuit vs Load Voltage Drop Test",
+      "tool_required": "Digital Multimeter in DC Volts",
+      "category": "BATTERY_TEST",
+      "procedure": "Measure battery terminal voltage resting, then attempt boot.",
+      "expected_reading": "Resting 3.8V - 4.2V; voltage drop during boot should not drop below 3.6V.",
+      "fail_condition": "Terminal voltage instantly collapses below 3.2V when boot initiated.",
+      "bench_time_minutes": 3
+    },
+    "TEST_PHYSICAL_BATTERY_DIMENSION_CHECK": {
+      "name": "Battery Physical Thickness & Outgassing Swell Inspection",
+      "tool_required": "Vernier Caliper / Visual Alignment Check",
+      "category": "SAFETY_INSPECTION",
+      "procedure": "Inspect lithium pouch on flat marble surface for pillowing or expansion.",
+      "expected_reading": "Completely flat pouch (< 4.2mm OEM standard thickness).",
+      "fail_condition": "Pouch is rounded or thicker than 4.8mm, or soft sponge-like texture.",
+      "bench_time_minutes": 2
+    },
+    "TEST_MICROSCOPE_CORROSION_INSPECTION": {
+      "name": "Full Motherboard Optical Microscope Corrosion Sweep",
+      "tool_required": "Stereo Microscope with Ring LED Light",
+      "category": "CORROSION_INSPECTION",
+      "procedure": "Inspect under-fill borders, shield perimeters, and filter capacitor arrays for salt crusting.",
+      "expected_reading": "Clean solder joints with bright metallic silver luster.",
+      "fail_condition": "Green copper carbonate or white crusty lead-tin oxide deposits.",
+      "bench_time_minutes": 10
+    },
+    "TEST_DIODE_MODE_MAIN_POWER_RAILS": {
+      "name": "Diode Mode Measurement of Primary Motherboard Power Rails",
+      "tool_required": "Digital Multimeter (Diode Mode)",
+      "category": "DIODE_MODE_TEST",
+      "procedure": "Measure diode drop to ground on VDD_MAIN, VBAT, 1.8V_IO, and S2_REG rails.",
+      "expected_reading": "VDD_MAIN: ~0.380V - 0.450V; VBAT: ~0.420V - 0.520V; 1.8V_IO: ~0.350V - 0.480V.",
+      "fail_condition": "Any rail showing < 0.050V (low impedance leak) or 0.000V (dead short).",
+      "bench_time_minutes": 8
+    },
+    "TEST_ULTRASONIC_CLEANING_AND_BAKING": {
+      "name": "Ultrasonic Chemical De-oxidation & Dehydration",
+      "tool_required": "Industrial Ultrasonic Cleaner + PCB Drying Oven",
+      "category": "CHEMICAL_RESTO",
+      "procedure": "Immerse stripped logic board in pure electronics-grade IPA at 40kHz, followed by 60°C dry cycle.",
+      "expected_reading": "100% dry board with no flux or oxidation residue under BGA components.",
+      "fail_condition": "Moisture residue remaining under shield cavities.",
+      "bench_time_minutes": 45
+    },
+    "TEST_EXTERNAL_KNOWN_GOOD_DISPLAY": {
+      "name": "Known-Good OEM Test Display Assembly Substitution",
+      "tool_required": "Known-Good Test Screen + Heating Pad",
+      "category": "SUBSTITUTION_TEST",
+      "procedure": "Connect known-working OEM display panel flex directly to board without adhering.",
+      "expected_reading": "Crisp display illumination, accurate color calibration, responsive 10-finger touch.",
+      "fail_condition": "Same visual fault persists with known-good display (proves motherboard driver fault).",
+      "bench_time_minutes": 10
+    },
+    "TEST_CURRENT_DRAW_BOOT_VIBRATION": {
+      "name": "Blind Boot Vibration & Current Cycle Confirmation",
+      "tool_required": "DC Power Supply with Analog/Digital Ammeter",
+      "category": "BOOT_CYCLE_TEST",
+      "procedure": "Power phone via DC supply and observe boot current waveform (0 -> 150mA -> 800mA -> 1.5A).",
+      "expected_reading": "Standard boot stepping current with haptic vibration confirmation.",
+      "fail_condition": "Current freezes at fixed value or loops cyclically.",
+      "bench_time_minutes": 5
+    },
+    "TEST_FLASHLIGHT_IMAGE_REFLECTION_CHECK": {
+      "name": "Angled Flashlight LCD Matrix Visual Inspection",
+      "tool_required": "High-Lumen LED Torch / Inspection Flashlight",
+      "category": "OPTICAL_TEST",
+      "procedure": "Hold flashlight at 30° - 45° angle directly against black display in darkened room.",
+      "expected_reading": "Faint ghost graphics / clock / desktop icons visible under polarized illumination.",
+      "fail_condition": "Completely blank liquid crystal matrix with zero polarization.",
+      "bench_time_minutes": 2
+    },
+    "TEST_DIODE_MODE_BACKLIGHT_ANODE": {
+      "name": "Backlight Anode Power Rail Diode Reading",
+      "tool_required": "Digital Multimeter (Diode Mode)",
+      "category": "DIODE_MODE_TEST",
+      "procedure": "Probe Backlight Anode (BL_ANODE) pin on FPC display connector.",
+      "expected_reading": "0.550V - 0.650V diode drop.",
+      "fail_condition": "0.000V (anode filter shorted to ground) or OL (blown series ferrite bead).",
+      "bench_time_minutes": 5
+    },
+    "TEST_DC_POWER_SUPPLY_BOOT_AMPERAGE": {
+      "name": "DC Bench Power Supply Boot Signature Waveform Analysis",
+      "tool_required": "Regulated DC Power Supply (0 - 30V, 0 - 5A) with Fast Milliammeter",
+      "category": "POWER_SIGNATURE_TEST",
+      "procedure": "Connect boot cable to battery terminal, set voltage to 4.0V, press power button.",
+      "expected_reading": "Normal boot curve: 60mA -> 120mA -> 350mA -> 800mA -> 1.2A dynamic fluctuation.",
+      "fail_condition": "Instant short before button press, or stuck at 80mA (RAM missing), or 180mA (NAND missing).",
+      "bench_time_minutes": 5
+    },
+    "TEST_MAINBOARD_FLEXION_PRESSURE_BOOT": {
+      "name": "Board Mechanical Flexion / Direct Pressure Test",
+      "tool_required": "Insulated Probe / Finger Pressure",
+      "category": "BGA_INTERMITTENT_TEST",
+      "procedure": "Apply light perpendicular pressure on CPU/RAM shield while triggering boot sequence.",
+      "expected_reading": "Boot behavior is completely identical regardless of applied pressure.",
+      "fail_condition": "Device boots or draws normal current ONLY while physical pressure is applied.",
+      "bench_time_minutes": 4
+    },
+    "TEST_DFU_FASTBOOT_MODE_FLASH": {
+      "name": "Hardware USB Interface Handshake in Recovery/DFU/EDL Mode",
+      "tool_required": "Workstation PC with 3uTools / Odin / Fastboot CLI",
+      "category": "SOFTWARE_INTERROGATION",
+      "procedure": "Hold key combo to force low-level bootloader mode, observe USB VID/PID enumeration.",
+      "expected_reading": "Clean USB enumeration with stable protocol handshake without disconnects.",
+      "fail_condition": "USB descriptor error, Error 4013 (NAND error), or random USB disconnect during flash.",
+      "bench_time_minutes": 8
+    },
+    "TEST_PANIC_LOG_ANALYSIS": {
+      "name": "Kernel Panic Crash Log Interrogation",
+      "tool_required": "Crash Log Analyzer / Log Reader Tool",
+      "category": "FIRMWARE_ANALYSIS",
+      "procedure": "Read panic.full or syslog crash dumps from crash log directory.",
+      "expected_reading": "Clean logs with zero missing hardware sensor watchdog timeouts.",
+      "fail_condition": "Panic string pointing to I2C sensor bus (e.g., prs0, mic1, gas_gauge, thermal_sensor).",
+      "bench_time_minutes": 5
+    }
+  }
+}

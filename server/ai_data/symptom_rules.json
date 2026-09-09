@@ -1,0 +1,180 @@
+{
+  "version": "1.0.0",
+  "taxonomy": {
+    "OVERHEATING": {
+      "category": "THERMAL",
+      "severity": "HIGH",
+      "description": "Device body or specific component produces abnormal thermal energy.",
+      "keywords": [
+        "overheating", "heating", "gets hot", "heat up", "heats up", "heats", "heat", "hot", "phone heat", "phone hot",
+        "heat too much", "heating too much", "warm", "hot to touch", "too hot", "gets warm", "getting hot",
+        "phone garam", "garam thay", "garam ho raha", "garam chhe", "garam", "bohot garam", "overheat",
+        "burning hot", "heats while charging", "thermal", "battery heating", "processor heating"
+      ],
+      "risk_flags": ["THERMAL_RUNAWAY_RISK", "POTENTIAL_PMIC_SHORT"]
+    },
+    "CHARGING_FAILURE": {
+      "category": "POWER_CHARGING",
+      "severity": "MEDIUM",
+      "description": "Device fails to draw charge, charge percentage remains static or drops, or connection is intermittent.",
+      "keywords": [
+        "not charging", "wont charge", "won't charge", "does not charge", "doesn't charge", "stopped charging",
+        "charging stopped", "charging failure", "charge nathi thatu", "charge nathi", "charge nathi levtu",
+        "charge nahi ho raha", "charger connect karu to charge nathi thatu", "charging issue", "charging problem",
+        "slow charging", "fake charging", "intermittent charging", "loose charging pin",
+        "cable not detected", "plug in nothing happens", "unsupported accessory",
+        "chargin issue", "charge stopped", "not taking charge", "charge nahi leta"
+      ],
+      "risk_flags": ["CHARGING_PORT_WEAR", "VBUS_SHORT"]
+    },
+    "LIQUID_EXPOSURE": {
+      "category": "ENVIRONMENTAL_DAMAGE",
+      "severity": "CRITICAL",
+      "description": "Direct contact or immersion in liquid, water, beverage, rain, or moisture causing oxidation and short circuits.",
+      "keywords": [
+        "water damage", "liquid exposure", "liquid entered", "phone pani ma padyu", "pani ma padyu", "pani ma",
+        "pani lagyu", "pani me gir gaya", "pani me", "fell in water", "fell in toilet", "got wet", "wet phone",
+        "wet", "spilled tea", "spilled coffee", "rain water", "moisture damage", "water splash",
+        "corrosion inside", "submerged in water", "wash machine", "water"
+      ],
+      "risk_flags": ["CORROSION_RISK", "POWER_RAIL_SHORT_RISK", "DO_NOT_POWER_ON"]
+    },
+    "IMPACT_EVENT": {
+      "category": "PHYSICAL_DAMAGE",
+      "severity": "MEDIUM",
+      "description": "Mechanical shock, drop, crush, or bending resulting in mechanical or micro-solder joint fractures.",
+      "keywords": [
+        "phone dropped", "dropped", "fell down", "phone padi gayu", "padi gayu", "giri gaya",
+        "impact damage", "screen tuti", "tut gaya", "hit the floor", "crushed",
+        "bent phone", "physical drop", "fell from bike", "dropped on road", "fall"
+      ],
+      "risk_flags": ["BGA_FRACTURE_RISK", "FLEX_CABLE_TEAR_RISK"]
+    },
+    "DISPLAY_PHYSICAL_DAMAGE": {
+      "category": "DISPLAY",
+      "severity": "MEDIUM",
+      "description": "Visible cracks, shattered glass, bleeding AMOLED matrix, or ink spots.",
+      "keywords": [
+        "cracked screen", "broken display", "screen tuti gai", "glass broken",
+        "shattered glass", "ink spot", "purple bleeding", "bleeding display",
+        "black patch", "glass cracked", "shattered", "broken screen"
+      ],
+      "risk_flags": ["PANEL_REPLACEMENT_REQUIRED"]
+    },
+    "DISPLAY_GRAPHICAL_ARTIFACT": {
+      "category": "DISPLAY",
+      "severity": "MEDIUM",
+      "description": "Lines, flickering, green tint, white screen of death, or ghost images while glass is intact.",
+      "keywords": [
+        "green line", "flickering", "flicker", "screen glitch", "white screen",
+        "colored lines", "horizontal lines", "vertical lines", "dim display",
+        "screen shaking", "display blinking"
+      ],
+      "risk_flags": ["DISPLAY_FLEX_OR_GPU_FAULT"]
+    },
+    "DISPLAY_BLACK": {
+      "category": "DISPLAY",
+      "severity": "HIGH",
+      "description": "Display is completely black/blank while phone may still vibrate, ring, or charge.",
+      "keywords": [
+        "black screen", "blank display", "no display", "screen light nathi avti",
+        "display blank", "screen black", "vibrates but no display", "rings but black screen",
+        "screen nahi chal raha", "display completely black"
+      ],
+      "risk_flags": ["BACKLIGHT_OR_OLED_POWER_RAIL_FAULT"]
+    },
+    "TOUCH_UNRESPONSIVE": {
+      "category": "TOUCH",
+      "severity": "MEDIUM",
+      "description": "Digitizer touch input is partially or completely unresponsive, or registers ghost touches.",
+      "keywords": [
+        "touch not working", "touch unresponsive", "touch bandh chhe", "touch bandh",
+        "touch kaam nahi kar raha", "ghost touch", "erratic touch", "half touch working",
+        "cannot tap", "touch freeze", "touch issue", "touch dead"
+      ],
+      "risk_flags": ["DIGITIZER_OR_TOUCH_IC_FAULT"]
+    },
+    "NO_POWER": {
+      "category": "POWER_STATE",
+      "severity": "HIGH",
+      "description": "Device completely unresponsive, no LED, no vibration, no display, zero current draw.",
+      "keywords": [
+        "dead phone", "no power", "wont turn on", "won't turn on", "not turning on", "phone chalu nathi thatu",
+        "phone on nahi ho raha", "completely dead", "no signs of life", "blackout",
+        "power button does nothing", "dead", "phone is dead"
+      ],
+      "risk_flags": ["PRIMARY_POWER_RAIL_SHORT", "PMIC_FAILURE"]
+    },
+    "BOOT_LOOP": {
+      "category": "BOOT_SYSTEM",
+      "severity": "MEDIUM",
+      "description": "Device repeatedly restarts at the brand logo or recovery screen without booting to OS.",
+      "keywords": [
+        "boot loop", "stuck on logo", "restarting continuously", "apple logo loop",
+        "samsung logo loop", "auto restart", "keeps restarting", "bandh chalu thay chhe",
+        "bar bar restart ho raha", "stuck in recovery", "restarting", "bootloop"
+      ],
+      "risk_flags": ["NAND_CORRUPTION", "BATTERY_DATA_RAIL_FAULT", "CPU_REBALL_RISK"]
+    },
+    "FAST_BATTERY_DRAIN": {
+      "category": "BATTERY_HEALTH",
+      "severity": "LOW",
+      "description": "Battery discharges abnormally fast within minutes or hours even on standby.",
+      "keywords": [
+        "battery drain", "draining fast", "battery utri jaay chhe", "battery jaldi khatam",
+        "bad backup", "discharges quickly", "100 to 0 fast", "battery life poor",
+        "battery draining"
+      ],
+      "risk_flags": ["LEAKAGE_CURRENT_RISK", "DEGRADED_CELL"]
+    },
+    "BATTERY_SWOLLEN": {
+      "category": "BATTERY_HEALTH",
+      "severity": "CRITICAL",
+      "description": "Battery pouch is bloated, pushing back glass or display out of housing.",
+      "keywords": [
+        "swollen battery", "battery puffed", "battery fuli gai chhe", "battery ful gaya", "battery fuli",
+        "back cover pop out", "screen lifting from frame", "bloated battery", "battery swollen",
+        "swollen", "puffed up", "bloated", "lifting off"
+      ],
+      "risk_flags": ["IMMEDIATE_FIRE_HAZARD", "PUNCTURE_EXPLOSION_RISK"]
+    },
+    "AUDIO_FAILURE": {
+      "category": "PERIPHERAL",
+      "severity": "LOW",
+      "description": "Earpiece, speaker, or microphone not producing sound or recording audio.",
+      "keywords": [
+        "no sound", "mic not working", "speaker crackling", "earpiece silent",
+        "awaj nathi aavti", "sound problem", "audio ic", "cannot hear caller"
+      ],
+      "risk_flags": ["AUDIO_CODEC_OR_FLEX_FAULT"]
+    },
+    "NETWORK_FAILURE": {
+      "category": "BASEBAND",
+      "severity": "MEDIUM",
+      "description": "No SIM card detected, searching for service, emergency calls only, or WiFi greyed out.",
+      "keywords": [
+        "no service", "searching network", "sim not working", "network nathi aavtu",
+        "wifi greyed out", "bluetooth not turning on", "no imei", "baseband unknown"
+      ],
+      "risk_flags": ["BASEBAND_PMIC_FAULT", "RF_TRANSCEIVER_FAULT"]
+    }
+  },
+  "negative_symptoms": {
+    "DISPLAY_WORKING_NORMAL": {
+      "keywords": ["display is working", "screen is fine", "screen chalu chhe", "display ok", "screen safe", "glass intact", "screen not broken"],
+      "contradicts": ["DISPLAY_PHYSICAL_DAMAGE", "DISPLAY_BLACK", "DISPLAY_GRAPHICAL_ARTIFACT"]
+    },
+    "TOUCH_WORKING_NORMAL": {
+      "keywords": ["touch is working", "touch fine", "touch ok", "touch perfectly"],
+      "contradicts": ["TOUCH_UNRESPONSIVE"]
+    },
+    "PHONE_POWERS_ON": {
+      "keywords": ["phone turns on", "phone turns on but", "vibrates", "rings", "power is working", "phone chalu chhe"],
+      "contradicts": ["NO_POWER"]
+    },
+    "NO_WATER_EXPOSURE": {
+      "keywords": ["no water", "never fell in water", "pani nathi lagyu", "dry device"],
+      "contradicts": ["LIQUID_EXPOSURE"]
+    }
+  }
+}

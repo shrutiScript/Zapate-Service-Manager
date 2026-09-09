@@ -1,0 +1,160 @@
+{
+  "version": "1.0.0",
+  "questions": [
+    {
+      "id": "Q_CHARGER_DETECTION_STATE",
+      "differentiates": [
+        "CHARGING_PORT_SUB_BOARD_DAMAGE",
+        "CHARGING_IC_PMIC_CIRCUIT_FAULT"
+      ],
+      "question": "When you plug in the charger, does the device show the lightning bolt/charging animation on screen, but the battery percentage never increases?",
+      "options": [
+        {
+          "label": "Yes (Detects charger, but 0% increase / fake charging)",
+          "value": "FAKE_CHARGING_DETECTED",
+          "evidence_boost": {
+            "CHARGING_IC_PMIC_CIRCUIT_FAULT": 25,
+            "CHARGING_PORT_SUB_BOARD_DAMAGE": -15
+          }
+        },
+        {
+          "label": "No (Zero detection at all, loose connector or zero current draw)",
+          "value": "NO_DETECTION_OR_LOOSE",
+          "evidence_boost": {
+            "CHARGING_PORT_SUB_BOARD_DAMAGE": 25,
+            "CHARGING_IC_PMIC_CIRCUIT_FAULT": -5
+          }
+        },
+        {
+          "label": "Unknown / Not Tested Yet",
+          "value": "NOT_TESTED",
+          "evidence_boost": {}
+        }
+      ]
+    },
+    {
+      "id": "Q_FLASHLIGHT_IMAGE_CHECK",
+      "differentiates": [
+        "DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE",
+        "DISPLAY_BACKLIGHT_CIRCUIT_BLOWN"
+      ],
+      "question": "If you shine a bright torch/flashlight directly on the black screen while powering on, can you see faint icons or text in the background?",
+      "options": [
+        {
+          "label": "Yes, faint icons/graphics are visible under the torch",
+          "value": "FAINT_IMAGE_PRESENT",
+          "evidence_boost": {
+            "DISPLAY_BACKLIGHT_CIRCUIT_BLOWN": 35,
+            "DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE": -20
+          }
+        },
+        {
+          "label": "No, the screen is completely pitch black with no image",
+          "value": "NO_IMAGE_AT_ALL",
+          "evidence_boost": {
+            "DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE": 20,
+            "DISPLAY_BACKLIGHT_CIRCUIT_BLOWN": -10
+          }
+        },
+        {
+          "label": "Not sure / OLED panel type",
+          "value": "NOT_SURE",
+          "evidence_boost": {}
+        }
+      ]
+    },
+    {
+      "id": "Q_POWER_SUPPLY_INITIAL_AMPERAGE",
+      "differentiates": [
+        "PRIMARY_POWER_RAIL_SHORT_CIRCUIT",
+        "BATTERY_DEGRADATION_CELL_FAILURE"
+      ],
+      "question": "What is the behavior on a DC bench power supply or USB power meter before pressing the power button?",
+      "options": [
+        {
+          "label": "Immediate high current draw (> 500mA - 2.0A) before pressing power button",
+          "value": "PRIMARY_SHORT_HIGH_DRAW",
+          "evidence_boost": {
+            "PRIMARY_POWER_RAIL_SHORT_CIRCUIT": 40,
+            "BATTERY_DEGRADATION_CELL_FAILURE": -25
+          }
+        },
+        {
+          "label": "Zero current draw (0.000A) until power button pressed, boots when connected to DC power",
+          "value": "ZERO_STANDBY_BOOTS_ON_DC",
+          "evidence_boost": {
+            "BATTERY_DEGRADATION_CELL_FAILURE": 35,
+            "PRIMARY_POWER_RAIL_SHORT_CIRCUIT": -30
+          }
+        },
+        {
+          "label": "Not tested with DC power supply yet",
+          "value": "NOT_TESTED",
+          "evidence_boost": {}
+        }
+      ]
+    },
+    {
+      "id": "Q_LIQUID_INDICATOR_STATUS",
+      "differentiates": [
+        "LIQUID_CORROSION_AND_POWER_RAIL_SHORT",
+        "CHARGING_IC_PMIC_CIRCUIT_FAULT"
+      ],
+      "question": "Has the device had contact with water, rain, condensation, or is the Liquid Contact Indicator (LCI) sticker red?",
+      "options": [
+        {
+          "label": "Confirmed liquid contact or LCI sticker is bright red",
+          "value": "CONFIRMED_LIQUID_CONTACT",
+          "evidence_boost": {
+            "LIQUID_CORROSION_AND_POWER_RAIL_SHORT": 35,
+            "CHARGING_IC_PMIC_CIRCUIT_FAULT": 10
+          }
+        },
+        {
+          "label": "Strictly dry; problem happened purely after a physical drop/impact",
+          "value": "STRICTLY_DRY_DROP_ONLY",
+          "evidence_boost": {
+            "LIQUID_CORROSION_AND_POWER_RAIL_SHORT": -40,
+            "CHARGING_PORT_SUB_BOARD_DAMAGE": 20
+          }
+        },
+        {
+          "label": "Unknown customer history",
+          "value": "UNKNOWN",
+          "evidence_boost": {}
+        }
+      ]
+    },
+    {
+      "id": "Q_BOOT_LOOP_CURRENT_SIGNATURE",
+      "differentiates": [
+        "CORRUPTED_FIRMWARE_NAND_FAULT",
+        "CPU_RAM_BGA_JOINT_MICRO_FRACTURE"
+      ],
+      "question": "Does the device connect to PC in Recovery/DFU/Fastboot mode, and does pressing on the CPU area change the boot behavior?",
+      "options": [
+        {
+          "label": "Detected by PC reliably; reboot happens only when loading OS GUI",
+          "value": "PC_DETECTED_OS_STAGE_RESTART",
+          "evidence_boost": {
+            "CORRUPTED_FIRMWARE_NAND_FAULT": 30,
+            "CPU_RAM_BGA_JOINT_MICRO_FRACTURE": -15
+          }
+        },
+        {
+          "label": "Not detected by PC; boots momentarily only when physically pressing on board/CPU",
+          "value": "BOARD_FLEXION_PRESSURE_RESPONSIVE",
+          "evidence_boost": {
+            "CPU_RAM_BGA_JOINT_MICRO_FRACTURE": 35,
+            "CORRUPTED_FIRMWARE_NAND_FAULT": -25
+          }
+        },
+        {
+          "label": "Not tested with computer or pressure yet",
+          "value": "NOT_TESTED",
+          "evidence_boost": {}
+        }
+      ]
+    }
+  ]
+}

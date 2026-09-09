@@ -1,0 +1,5 @@
+# Python AI Diagnosis Engine Requirements
+# Built primarily with standard library (json, re, dataclasses, sys, os, typing)
+# Optional packages for testing & validation:
+pytest>=8.0.0
+pydantic>=2.0.0

@@ -1,0 +1,301 @@
+{
+  "version": "1.0.0",
+  "hypotheses": [
+    {
+      "id": "CHARGING_PORT_SUB_BOARD_DAMAGE",
+      "name": "Charging Port / Sub-Board Mechanical or Pin Fault",
+      "category": "CHARGING_SUB_SYSTEM",
+      "prior_probability": 0.35,
+      "required_or_supporting_symptoms": {
+        "CHARGING_FAILURE": 40,
+        "IMPACT_EVENT": 15,
+        "FAST_BATTERY_DRAIN": 5
+      },
+      "conflicting_symptoms": {
+        "LIQUID_EXPOSURE": -15
+      },
+      "risk_level": "LOW",
+      "hardware_trigger": "MECHANICAL_WEAR_OR_DROP",
+      "confirmation_tests": [
+        "TEST_USB_AMMETER_CURRENT_DRAW",
+        "TEST_CHARGING_PORT_MICROSCOPE_PIN_CHECK",
+        "TEST_SUB_BOARD_FLEX_CONTINUITY"
+      ],
+      "recommended_parts": ["OEM Type-C / Lightning Charging Sub-board Flex", "Charging Port Connector"],
+      "bench_steps": [
+        "Inspect charging port interior with optical loupe for bent pins, lint, or physical oxidation",
+        "Connect USB Ammeter to test current draw (normal 5V/9V fast charge negotiation)",
+        "Open back housing and test continuity across the sub-board to main-board interconnect flex",
+        "Replace charging sub-board assembly and verify clean 1.5A - 2.4A current draw"
+      ],
+      "est_bench_minutes_min": 20,
+      "est_bench_minutes_max": 35
+    },
+    {
+      "id": "CHARGING_IC_PMIC_CIRCUIT_FAULT",
+      "name": "Charging Management IC / Secondary PMIC Failure (Tristar/Hydra/PM6150/SMB)",
+      "category": "MAINBOARD_POWER_MANAGEMENT",
+      "prior_probability": 0.20,
+      "required_or_supporting_symptoms": {
+        "CHARGING_FAILURE": 35,
+        "OVERHEATING": 30,
+        "FAST_BATTERY_DRAIN": 20,
+        "NO_POWER": 15
+      },
+      "conflicting_symptoms": {},
+      "risk_level": "MEDIUM",
+      "hardware_trigger": "ELECTRICAL_SURGE_OR_COMPONENT_FAILURE",
+      "confirmation_tests": [
+        "TEST_DIODE_MODE_VBUS_LINE",
+        "TEST_THERMAL_CAMERA_BOARD_SWEEP",
+        "TEST_USB_AMMETER_CURRENT_DRAW"
+      ],
+      "recommended_parts": ["Charging IC Chip (Tristar / SMB / PMIC)", "Micro Jumper Wire", "Solder Flux & Stencil"],
+      "bench_steps": [
+        "Test diode mode value on VBUS pin 1 of motherboard connector (standard 0.450 - 0.650V)",
+        "Perform thermal imaging camera sweep with power supply set to 4.2V current limit 1.5A to spot hot PMIC",
+        "Shield adjacent CPU/NAND with Kapton thermal tape before micro-soldering heat application",
+        "Remove faulty charging controller IC and reball replacement IC with leaded 183°C solder paste"
+      ],
+      "est_bench_minutes_min": 45,
+      "est_bench_minutes_max": 75
+    },
+    {
+      "id": "BATTERY_DEGRADATION_CELL_FAILURE",
+      "name": "Degraded / Internal High-Resistance Lithium Battery Cell",
+      "category": "POWER_STORAGE",
+      "prior_probability": 0.30,
+      "required_or_supporting_symptoms": {
+        "FAST_BATTERY_DRAIN": 40,
+        "OVERHEATING": 20,
+        "BOOT_LOOP": 15,
+        "CHARGING_FAILURE": 10
+      },
+      "conflicting_symptoms": {
+        "IMPACT_EVENT": -10
+      },
+      "risk_level": "LOW",
+      "hardware_trigger": "CHEMICAL_AGING_OR_CYCLE_DEPLETION",
+      "confirmation_tests": [
+        "TEST_BATTERY_INTERNAL_RESISTANCE_AND_CYCLES",
+        "TEST_BATTERY_VOLTAGE_LOAD_DROP"
+      ],
+      "recommended_parts": ["OEM Certified High-Capacity Battery Assembly", "Battery Pull Tabs Adhesive"],
+      "bench_steps": [
+        "Test open circuit terminal voltage (minimum 3.7V needed to accept charge)",
+        "Analyze battery health cycles and internal resistance via diagnostic box (<80% health requires replacement)",
+        "Safely release battery stretch adhesive pull tabs without bending or puncturing the lithium pouch",
+        "Install new OEM battery, calibrate 0-100% charging cycle, and verify temperature sensors"
+      ],
+      "est_bench_minutes_min": 15,
+      "est_bench_minutes_max": 30
+    },
+    {
+      "id": "BATTERY_SWELLING_SAFETY_CRITICAL",
+      "name": "Severely Degraded Bloated / Swollen Lithium Battery (Safety Critical)",
+      "category": "POWER_STORAGE_SAFETY",
+      "prior_probability": 0.15,
+      "required_or_supporting_symptoms": {
+        "BATTERY_SWOLLEN": 60,
+        "OVERHEATING": 25,
+        "FAST_BATTERY_DRAIN": 20
+      },
+      "conflicting_symptoms": {},
+      "risk_level": "HIGH",
+      "hardware_trigger": "GAS_GENERATION_ELECTROLYTE_BREAKDOWN",
+      "confirmation_tests": [
+        "TEST_PHYSICAL_BATTERY_DIMENSION_CHECK"
+      ],
+      "recommended_parts": ["OEM Battery Assembly", "Fireproof Battery Safety Container"],
+      "bench_steps": [
+        "DO NOT puncture, bend, or apply direct heat > 60°C to the bloated battery pouch",
+        "Use isopropyl alcohol drop softening method along perimeter to loosen adhesive safely",
+        "Store degraded swollen cell inside fireproof sand/vermiculite container for safe e-waste disposal",
+        "Inspect surrounding display and back glass frame for stress warpage before installing new battery"
+      ],
+      "est_bench_minutes_min": 25,
+      "est_bench_minutes_max": 45
+    },
+    {
+      "id": "LIQUID_CORROSION_AND_POWER_RAIL_SHORT",
+      "name": "Liquid Corrosion Oxidation & Power Rail Short Circuit",
+      "category": "LIQUID_DAMAGE",
+      "prior_probability": 0.25,
+      "required_or_supporting_symptoms": {
+        "LIQUID_EXPOSURE": 55,
+        "OVERHEATING": 25,
+        "NO_POWER": 25,
+        "CHARGING_FAILURE": 20,
+        "BOOT_LOOP": 15
+      },
+      "conflicting_symptoms": {
+        "IMPACT_EVENT": -5
+      },
+      "risk_level": "HIGH",
+      "hardware_trigger": "ELECTROCHEMICAL_CORROSION",
+      "confirmation_tests": [
+        "TEST_MICROSCOPE_CORROSION_INSPECTION",
+        "TEST_DIODE_MODE_MAIN_POWER_RAILS",
+        "TEST_ULTRASONIC_CLEANING_AND_BAKING"
+      ],
+      "recommended_parts": ["SMD Capacitor Kit", "Conformal Board Coating", "Ultrasonic Cleaning Solvent"],
+      "bench_steps": [
+        "Disconnect battery IMMEDIATELY; do not connect charger or attempt power-on",
+        "Remove all board shield cans and inspect under optical microscope for green/white oxide growth",
+        "Submerge motherboard in 99.9% Isopropyl Alcohol ultrasonic bath at 40kHz for 8 minutes",
+        "Bake motherboard in dry heating oven at 65°C for 45 minutes to eradicate trapped moisture under BGA chips",
+        "Test diode mode on VDD_MAIN, V_BAT, and 1.8V Always-On rails; isolate shorted decoupling SMD capacitors",
+        "Apply conformal acrylic coating to protect exposed copper traces from future oxidation"
+      ],
+      "est_bench_minutes_min": 60,
+      "est_bench_minutes_max": 120
+    },
+    {
+      "id": "DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE",
+      "name": "OLED Matrix / Digitizer Flex Cable Fracture from Drop Impact",
+      "category": "DISPLAY_SUBSYSTEM",
+      "prior_probability": 0.35,
+      "required_or_supporting_symptoms": {
+        "DISPLAY_PHYSICAL_DAMAGE": 50,
+        "IMPACT_EVENT": 30,
+        "DISPLAY_BLACK": 25,
+        "TOUCH_UNRESPONSIVE": 20,
+        "DISPLAY_GRAPHICAL_ARTIFACT": 20
+      },
+      "conflicting_symptoms": {
+        "LIQUID_EXPOSURE": -10
+      },
+      "risk_level": "LOW",
+      "hardware_trigger": "MECHANICAL_SHOCK_FRACTURE",
+      "confirmation_tests": [
+        "TEST_EXTERNAL_KNOWN_GOOD_DISPLAY",
+        "TEST_CURRENT_DRAW_BOOT_VIBRATION"
+      ],
+      "recommended_parts": ["OEM OLED / IPS Display Assembly with Frame", "Display Waterproof Adhesive Tape"],
+      "bench_steps": [
+        "Warm display perimeter on 75°C separation hot plate for 3 minutes",
+        "Carefully pry display flex connector and attach a Known-Good OEM test display",
+        "Power on device and verify boot logo, color spectrum, 10-point touch grid, and ambient light sensor",
+        "Clean housing frame bevel with 0.05mm scraper, apply waterproof perimeter adhesive, and clamp for 30 min"
+      ],
+      "est_bench_minutes_min": 30,
+      "est_bench_minutes_max": 50
+    },
+    {
+      "id": "DISPLAY_BACKLIGHT_CIRCUIT_BLOWN",
+      "name": "Display Backlight Driver IC / Boost Inductor / Filter Blown",
+      "category": "DISPLAY_SUBSYSTEM",
+      "prior_probability": 0.15,
+      "required_or_supporting_symptoms": {
+        "DISPLAY_BLACK": 40,
+        "IMPACT_EVENT": 15,
+        "LIQUID_EXPOSURE": 15
+      },
+      "conflicting_symptoms": {
+        "DISPLAY_PHYSICAL_DAMAGE": -15
+      },
+      "risk_level": "MEDIUM",
+      "hardware_trigger": "ANODE_LINE_OVERCURRENT_OR_SHORT",
+      "confirmation_tests": [
+        "TEST_FLASHLIGHT_IMAGE_REFLECTION_CHECK",
+        "TEST_DIODE_MODE_BACKLIGHT_ANODE"
+      ],
+      "recommended_parts": ["Backlight Driver IC", "Backlight Boost Coil Inductor", "Schottky Diode"],
+      "bench_steps": [
+        "Shine bright flashlight at 45° angle onto display; check if faint desktop icons are visible underneath",
+        "Check diode mode reading on display connector Backlight Anode pin (normal 0.550V; 0.000V indicates blown diode/short)",
+        "Replace burned backlight filter ferrite bead or shorted Schottky diode under microscope",
+        "Verify 18V - 24V boost voltage on anode rail under active screen load"
+      ],
+      "est_bench_minutes_min": 45,
+      "est_bench_minutes_max": 75
+    },
+    {
+      "id": "PRIMARY_POWER_RAIL_SHORT_CIRCUIT",
+      "name": "Primary Power Rail (VDD_MAIN / VBAT) Short Circuit",
+      "category": "MAINBOARD_POWER",
+      "prior_probability": 0.20,
+      "required_or_supporting_symptoms": {
+        "NO_POWER": 45,
+        "OVERHEATING": 30,
+        "CHARGING_FAILURE": 20,
+        "IMPACT_EVENT": 10
+      },
+      "conflicting_symptoms": {},
+      "risk_level": "HIGH",
+      "hardware_trigger": "CAPACITOR_DIELECTRIC_BREAKDOWN_OR_PMIC_SHORT",
+      "confirmation_tests": [
+        "TEST_DC_POWER_SUPPLY_BOOT_AMPERAGE",
+        "TEST_THERMAL_CAMERA_BOARD_SWEEP",
+        "TEST_DIODE_MODE_MAIN_POWER_RAILS"
+      ],
+      "recommended_parts": ["0201/0402 SMD Ceramic Capacitors (10uF/22uF)", "Rosin / Thermal Paste"],
+      "bench_steps": [
+        "Connect DC Power Supply to battery terminal set to 4.0V; monitor immediate 1.5A+ draw without pressing power button",
+        "Apply rosin smoke or thermal camera to find glowingly hot shorted ceramic decoupling capacitor",
+        "Flick off shorted capacitor with micro-tweezers and confirm diode mode recovery to > 0.350V",
+        "Replace capacitor with identical capacitance & voltage rating to maintain rail stability"
+      ],
+      "est_bench_minutes_min": 45,
+      "est_bench_minutes_max": 90
+    },
+    {
+      "id": "CPU_RAM_BGA_JOINT_MICRO_FRACTURE",
+      "name": "AP CPU / LPDDR RAM Solder Ball Joint Fracture (Drop Shock)",
+      "category": "CORE_PROCESSING",
+      "prior_probability": 0.15,
+      "required_or_supporting_symptoms": {
+        "BOOT_LOOP": 35,
+        "NO_POWER": 30,
+        "IMPACT_EVENT": 35
+      },
+      "conflicting_symptoms": {
+        "LIQUID_EXPOSURE": -15
+      },
+      "risk_level": "HIGH",
+      "hardware_trigger": "MECHANICAL_FRACTURE_BGA",
+      "confirmation_tests": [
+        "TEST_DC_POWER_SUPPLY_BOOT_AMPERAGE",
+        "TEST_MAINBOARD_FLEXION_PRESSURE_BOOT"
+      ],
+      "recommended_parts": ["BGA Reballing Stencil for AP/RAM", "0.25mm Leaded Solder Balls", "UV Curing Mask"],
+      "bench_steps": [
+        "Apply moderate thumb pressure directly over CPU shield can while powering device to test intermittent joint contact",
+        "Inspect DC power supply boot cycle: stuck at fixed 80mA - 150mA indicates CPU missing handshake with RAM",
+        "Perform CNC shield removal or 340°C hot air BGA separation of double-decker RAM layer",
+        "Clean pads on AP, reball RAM layer with precision stencil and 183°C solder, resolder to board"
+      ],
+      "est_bench_minutes_min": 90,
+      "est_bench_minutes_max": 180
+    },
+    {
+      "id": "CORRUPTED_FIRMWARE_NAND_FAULT",
+      "name": "System OS Firmware Panic / Storage NAND Data Corruption",
+      "category": "FIRMWARE_STORAGE",
+      "prior_probability": 0.20,
+      "required_or_supporting_symptoms": {
+        "BOOT_LOOP": 45,
+        "FAST_BATTERY_DRAIN": 5
+      },
+      "conflicting_symptoms": {
+        "IMPACT_EVENT": -10,
+        "LIQUID_EXPOSURE": -15
+      },
+      "risk_level": "LOW",
+      "hardware_trigger": "SOFTWARE_OR_NAND_HEALTH",
+      "confirmation_tests": [
+        "TEST_DFU_FASTBOOT_MODE_FLASH",
+        "TEST_PANIC_LOG_ANALYSIS"
+      ],
+      "recommended_parts": ["Data Recovery / Flashing Cable"],
+      "bench_steps": [
+        "Put device in DFU / Recovery / Fastboot mode and connect to computer",
+        "Extract panic.full logs or dmesg crash logs if accessible to determine kernel panic thread",
+        "Execute clean firmware flash with option to retain user data where feasible",
+        "If flash aborts at 20% (NAND Error 4013/9), re-route to hardware NAND IC inspection"
+      ],
+      "est_bench_minutes_min": 20,
+      "est_bench_minutes_max": 40
+    }
+  ]
+}
