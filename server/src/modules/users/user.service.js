@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { User } from './user.model.js';
+import { Shop } from '../shops/shop.model.js';
+import { Plan } from '../admin/plan.model.js';
 import { auditLogService } from '../admin/auditLog.service.js';
 
 export class UserService {
@@ -126,6 +128,38 @@ export class UserService {
   async create(data, req = null) {
     const existing = await User.findOne({ email: data.email.toLowerCase() });
     if (existing) throw new Error('Email already registered');
+
+    // Enforce operator / staff limits based on workshop's subscription plan
+    if (data.shopId) {
+      const shop = await Shop.findById(data.shopId);
+      if (shop) {
+        let plan = null;
+        if (shop.planId) {
+          plan = await Plan.findById(shop.planId);
+        }
+        if (!plan && shop.subscription) {
+          plan = await Plan.findOne({
+            $or: [
+              { name: shop.subscription },
+              { name: shop.subscription.replace(/\s+tier$/i, '') },
+              { name: `${shop.subscription} Tier` },
+            ],
+          });
+        }
+        const userLimit = plan ? (plan.limitUsers ?? plan.maxUsers ?? -1) : -1;
+        if (userLimit > 0) {
+          const currentCount = await User.countDocuments({
+            shopId: data.shopId,
+            status: { $ne: 'BLOCKED' },
+          });
+          if (currentCount >= userLimit) {
+            throw new Error(
+              `User account limit reached: The workshop's "${plan.name}" plan allows up to ${userLimit} staff/operator accounts. Please upgrade your subscription plan to add more staff.`
+            );
+          }
+        }
+      }
+    }
 
     const passwordHash = await bcrypt.hash(data.password || 'admin@123', 10);
     const user = await User.create({

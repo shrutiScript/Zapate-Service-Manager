@@ -6,6 +6,9 @@ import {
   getActiveShop,
   setActiveSession,
   clearActiveSession,
+  authChannel,
+  setExpiredNotice,
+  broadcastSubscriptionExpired,
 } from '../utils/sessionManager.js';
 
 const AuthContext = createContext();
@@ -80,13 +83,50 @@ export const AuthProvider = ({ children }) => {
     refreshUser();
   }, [refreshUser]);
 
-  // Global listeners for 401 Unauthorized and Browser Back / Forward Cache protection
+  // Global listeners for 401 Unauthorized, Browser Back/Forward Cache, and Cross-Tab Subscription Expiry
   useEffect(() => {
     const handleUnauthorized = () => {
       setUser(null);
       setCurrentShop(null);
       setToken(null);
       setAuthLoading(false);
+    };
+
+    const handleExpiredLogout = (noticeMsg) => {
+      const activeUser = getActiveUser();
+      // Super Admin is platform-wide and immune to workshop subscription expiry
+      if (activeUser?.role === 'SUPER_ADMIN') return;
+
+      const finalMsg = noticeMsg || 'Your subscription has expired. Please renew your subscription to continue.';
+      setExpiredNotice(finalMsg);
+      clearActiveSession();
+      setUser(null);
+      setCurrentShop(null);
+      setToken(null);
+      setAuthLoading(false);
+
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.replace('/login');
+      }
+    };
+
+    // 1. Multi-tab BroadcastChannel listener
+    const handleBroadcastMessage = (event) => {
+      if (event.data?.type === 'SUBSCRIPTION_EXPIRED') {
+        handleExpiredLogout(event.data.notice);
+      }
+    };
+
+    // 2. Cross-window / Cross-tab localStorage storage event listener
+    const handleStorageEvent = (e) => {
+      if (e.key === 'rf_subscription_expired_event' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed.action === 'EXPIRED') {
+            handleExpiredLogout(parsed.notice);
+          }
+        } catch (_) {}
+      }
     };
 
     const handlePageShow = () => {
@@ -112,13 +152,62 @@ export const AuthProvider = ({ children }) => {
     window.addEventListener('auth:unauthorized', handleUnauthorized);
     window.addEventListener('pageshow', handlePageShow);
     window.addEventListener('popstate', handlePageShow);
+    window.addEventListener('storage', handleStorageEvent);
+
+    if (authChannel) {
+      authChannel.addEventListener('message', handleBroadcastMessage);
+    }
 
     return () => {
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
       window.removeEventListener('pageshow', handlePageShow);
       window.removeEventListener('popstate', handlePageShow);
+      window.removeEventListener('storage', handleStorageEvent);
+      if (authChannel) {
+        authChannel.removeEventListener('message', handleBroadcastMessage);
+      }
     };
   }, []);
+
+  // Periodic Live Expiry Heartbeat (server-time synchronized checks every 5 seconds for workshop users)
+  useEffect(() => {
+    if (!user || user.role === 'SUPER_ADMIN' || !currentShop?.subscriptionExpiresAt) return;
+
+    // Calculate server time offset delta to guard against local device clock tampering
+    let serverOffsetMs = 0;
+    const knownServerTime = currentShop.serverTime || user.serverTime;
+    if (knownServerTime) {
+      serverOffsetMs = new Date(knownServerTime).getTime() - Date.now();
+    }
+
+    const checkLiveExpiry = () => {
+      const currentServerTime = Date.now() + serverOffsetMs;
+      const expiry = new Date(currentShop.subscriptionExpiresAt).getTime();
+      const isStatusExpired = String(currentShop.subscriptionStatus || '').toUpperCase() === 'EXPIRED';
+
+      if (currentServerTime >= expiry || isStatusExpired) {
+        const expiredNotice = 'Your subscription has expired. Please renew your subscription to continue.';
+        broadcastSubscriptionExpired({ shopId: currentShop._id, message: expiredNotice });
+        clearActiveSession();
+        setUser(null);
+        setCurrentShop(null);
+        setToken(null);
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.replace('/login');
+        }
+      }
+    };
+
+    // Check immediately on mount/focus and on interval
+    checkLiveExpiry();
+    const interval = setInterval(checkLiveExpiry, 5000);
+    window.addEventListener('focus', checkLiveExpiry);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', checkLiveExpiry);
+    };
+  }, [user, currentShop]);
 
   const updateCurrentShop = useCallback((shopData) => {
     if (!shopData) return;

@@ -21,7 +21,9 @@ import {
   CheckCircle,
   ShieldCheck,
   Smartphone,
+  X,
 } from 'lucide-react';
+import { useApp } from '../../../context/AppContext.jsx';
 import { formatCurrency } from '../../../utils/formatters.js';
 import { toast } from 'sonner';
 import api from '../../../services/api.js';
@@ -29,9 +31,21 @@ import { DependentDeviceSelect } from '../../../components/common/DependentDevic
 import { validatePrice } from '../../../utils/validators.js';
 
 export const CustomerListPage = () => {
+  const { searchQuery: globalSearchQuery, setSearchQuery: setGlobalSearchQuery } = useApp();
   const [customers, setCustomers] = useState([]);
   const [activeCustomer, setActiveCustomer] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(globalSearchQuery || '');
+
+  useEffect(() => {
+    if (globalSearchQuery !== undefined) {
+      setSearchQuery(globalSearchQuery);
+    }
+  }, [globalSearchQuery]);
+
+  const handleSearchChange = (val) => {
+    setSearchQuery(val);
+    setGlobalSearchQuery(val);
+  };
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
@@ -474,12 +488,15 @@ export const CustomerListPage = () => {
   };
 
   const filteredCustomers = customers.filter((c) => {
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
     return (
       (c.name || '').toLowerCase().includes(q) ||
       (c.mobile || '').toLowerCase().includes(q) ||
       (c.email || '').toLowerCase().includes(q) ||
-      (c.city || '').toLowerCase().includes(q)
+      (c.city || '').toLowerCase().includes(q) ||
+      (c.deviceBrand || '').toLowerCase().includes(q) ||
+      (c.deviceModel || '').toLowerCase().includes(q)
     );
   });
 
@@ -592,17 +609,39 @@ export const CustomerListPage = () => {
           {/* Left Column: Customer Directory Table */}
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div className="input-wrapper" style={{ width: '100%' }}>
+              <div className="input-wrapper" style={{ width: '100%', position: 'relative' }}>
                 <span className="input-icon">
                   <Search size={15} />
                 </span>
                 <input
                   type="text"
                   className="input-control input-with-icon"
-                  placeholder="Search customers by name, mobile, email, city..."
+                  placeholder="Search customers by name, mobile, email, city, device..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => handleSearchChange('')}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#94a3b8',
+                      padding: '2px',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    title="Clear search"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
             </div>
 

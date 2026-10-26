@@ -49,9 +49,27 @@ export class AdminController {
     }
   }
 
+  async getSystemReports(req, res, next) {
+    try {
+      const data = await adminService.getSystemReports();
+      return sendSuccess(res, data);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getPlans(req, res, next) {
     try {
       const plans = await adminService.getPlans();
+      return sendSuccess(res, plans);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getPublicPlans(req, res, next) {
+    try {
+      const plans = await adminService.getPublicPlans();
       return sendSuccess(res, plans);
     } catch (err) {
       next(err);
@@ -71,6 +89,24 @@ export class AdminController {
     try {
       const plan = await adminService.updatePlan(req.params.id, req.body, req);
       return sendSuccess(res, plan, 'Subscription plan updated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async archivePlan(req, res, next) {
+    try {
+      const plan = await adminService.archivePlan(req.params.id, req);
+      return sendSuccess(res, plan, 'Subscription plan archived safely');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async unarchivePlan(req, res, next) {
+    try {
+      const plan = await adminService.unarchivePlan(req.params.id, req);
+      return sendSuccess(res, plan, 'Subscription plan restored from archive');
     } catch (err) {
       next(err);
     }

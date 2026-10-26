@@ -120,6 +120,14 @@ export const clearActiveSession = () => {
   } catch (_) {}
 };
 
+const KEY_EXPIRED_NOTICE = 'rf_expired_notice';
+
+// Multi-tab BroadcastChannel for instant cross-tab security events
+export const authChannel =
+  typeof window !== 'undefined' && 'BroadcastChannel' in window
+    ? new BroadcastChannel('rf_auth_events')
+    : null;
+
 /**
  * Stores a blocked account notification banner to be displayed on the login page.
  */
@@ -146,4 +154,66 @@ export const consumeBlockedNotice = () => {
     }
   } catch (_) {}
   return null;
+};
+
+/**
+ * Stores an expired subscription notification banner to be displayed on the login page.
+ */
+export const setExpiredNotice = (msg) => {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(
+      KEY_EXPIRED_NOTICE,
+      msg || 'Your subscription has expired. Please renew your subscription to continue.'
+    );
+  } catch (_) {}
+};
+
+/**
+ * Reads and consumes (clears) any pending expired subscription notification.
+ */
+export const consumeExpiredNotice = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const msg = sessionStorage.getItem(KEY_EXPIRED_NOTICE);
+    if (msg) {
+      sessionStorage.removeItem(KEY_EXPIRED_NOTICE);
+      return msg;
+    }
+  } catch (_) {}
+  return null;
+};
+
+/**
+ * Broadcasts subscription expiry event to all other open browser tabs
+ * Uses BroadcastChannel with localStorage sync fallback for 100% reliability.
+ */
+export const broadcastSubscriptionExpired = (payload = {}) => {
+  if (typeof window === 'undefined') return;
+  const msg = payload.message || 'Your subscription has expired. Please renew your subscription to continue.';
+
+  setExpiredNotice(msg);
+
+  // 1. BroadcastChannel message to other open tabs
+  try {
+    authChannel?.postMessage({
+      type: 'SUBSCRIPTION_EXPIRED',
+      shopId: payload.shopId,
+      notice: msg,
+      timestamp: Date.now(),
+    });
+  } catch (_) {}
+
+  // 2. localStorage storage event (cross-window / incognito / fallback)
+  try {
+    localStorage.setItem(
+      'rf_subscription_expired_event',
+      JSON.stringify({
+        action: 'EXPIRED',
+        shopId: payload.shopId,
+        notice: msg,
+        timestamp: Date.now(),
+      })
+    );
+  } catch (_) {}
 };

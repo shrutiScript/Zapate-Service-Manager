@@ -3,15 +3,93 @@ import { Shop } from './shop.model.js';
 import { User } from '../users/user.model.js';
 import { auditLogService } from '../admin/auditLog.service.js';
 
+import { subscriptionService } from './subscription.service.js';
+
 export class ShopService {
   async getAll(query = {}) {
-    return Shop.find({}).sort({ createdAt: -1 });
+    const filter = {};
+
+    if (query.status && query.status !== 'ALL') {
+      filter.status = query.status;
+    }
+
+    if (query.paymentStatus && query.paymentStatus !== 'ALL') {
+      filter.subscriptionPaymentStatus = query.paymentStatus;
+    }
+
+    if (query.plan && query.plan !== 'ALL') {
+      filter.$or = [{ subscription: query.plan }, { planId: query.plan }];
+    }
+
+    const now = new Date();
+
+    if (query.expiryPeriod && query.expiryPeriod !== 'ALL') {
+      if (query.expiryPeriod === 'EXPIRED') {
+        filter.subscriptionExpiresAt = { $lte: now };
+      } else if (query.expiryPeriod === '7DAYS') {
+        const inSevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        filter.subscriptionExpiresAt = { $gte: now, $lte: inSevenDays };
+      } else if (query.expiryPeriod === '30DAYS') {
+        const inThirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        filter.subscriptionExpiresAt = { $gte: now, $lte: inThirtyDays };
+      }
+    }
+
+    if (query.search) {
+      const s = query.search.trim();
+      filter.$or = [
+        { name: { $regex: s, $options: 'i' } },
+        { code: { $regex: s, $options: 'i' } },
+        { ownerName: { $regex: s, $options: 'i' } },
+        { ownerEmail: { $regex: s, $options: 'i' } },
+        { city: { $regex: s, $options: 'i' } },
+        { subscription: { $regex: s, $options: 'i' } },
+      ];
+    }
+
+    const shops = await Shop.find(filter).populate('planId').sort({ createdAt: -1 });
+
+    // Attach live days remaining, server time & calculated status
+    let result = shops.map((s) => {
+      const obj = s.toObject();
+      const liveStatus = subscriptionService.calculateStatus(s, now);
+      obj.daysRemaining = subscriptionService.getDaysRemaining(s, now);
+      obj.calculatedStatus = liveStatus;
+      obj.subscriptionStatus = liveStatus;
+      obj.serverTime = now;
+      return obj;
+    });
+
+    if (query.subscriptionStatus && query.subscriptionStatus !== 'ALL') {
+      result = result.filter((s) => s.calculatedStatus === query.subscriptionStatus);
+    }
+
+    return result;
+  }
+
+  async getSubscription(shopId) {
+    return subscriptionService.getSubscriptionDetails(shopId);
+  }
+
+  async renewSubscription(shopId, data, req = null) {
+    return subscriptionService.renewSubscription(shopId, data, req);
+  }
+
+  async extendSubscription(shopId, data, req = null) {
+    return subscriptionService.extendSubscription(shopId, data, req);
   }
 
   async getById(id) {
-    const shop = await Shop.findById(id);
+    const shop = await Shop.findById(id).populate('planId');
     if (!shop) throw new Error('Shop not found');
-    return shop;
+    const now = new Date();
+    const obj = shop.toObject();
+    const liveStatus = subscriptionService.calculateStatus(shop, now);
+    obj.daysRemaining = subscriptionService.getDaysRemaining(shop, now);
+    obj.calculatedStatus = liveStatus;
+    obj.subscriptionStatus = liveStatus;
+    obj.serverTime = now;
+    return obj;
   }
 
   async getByCode(code) {
@@ -99,7 +177,14 @@ export class ShopService {
     const previous = await Shop.findById(id);
     if (!previous) throw new Error('Shop not found');
 
-    const updated = await Shop.findByIdAndUpdate(id, data, { new: true });
+    const sanitizedData = { ...data };
+    if (!req || req.user?.role !== 'SUPER_ADMIN') {
+      delete sanitizedData.enabledModules;
+      delete sanitizedData.status;
+      delete sanitizedData.blockedReason;
+    }
+
+    const updated = await Shop.findByIdAndUpdate(id, sanitizedData, { new: true });
 
     // Audit log if performed by Super Admin
     if (req && req.user?.role === 'SUPER_ADMIN') {
@@ -117,6 +202,99 @@ export class ShopService {
     }
 
     return updated;
+  }
+
+  /**
+   * Get active module configuration for a specific workshop
+   */
+  async getModules(id) {
+    const shop = await Shop.findById(id);
+    if (!shop) throw new Error('Shop not found');
+
+    const defaultModules = [
+      'customers',
+      'repairs',
+      'devices',
+      'technicians',
+      'pos',
+      'payments',
+      'inventory',
+      'suppliers',
+      'purchases',
+      'used-mobiles',
+      'reports',
+      'settings',
+      'users',
+      'warranties',
+      'community',
+      'notifications',
+    ];
+
+    const currentModules = Array.isArray(shop.enabledModules) && shop.enabledModules.length > 0
+      ? shop.enabledModules
+      : defaultModules;
+
+    return {
+      shopId: shop._id,
+      name: shop.name,
+      code: shop.code,
+      enabledModules: currentModules,
+    };
+  }
+
+  /**
+   * Update active module configuration for a specific workshop independently
+   */
+  async updateModules(id, data, req = null) {
+    const shop = await Shop.findById(id);
+    if (!shop) throw new Error('Shop not found');
+
+    const previousModules = Array.isArray(shop.enabledModules) ? [...shop.enabledModules] : [];
+    let updatedModules = [...previousModules];
+
+    if (data.moduleKey !== undefined && typeof data.enabled === 'boolean') {
+      const moduleKey = String(data.moduleKey).trim();
+      if (!moduleKey) {
+        throw new Error('Valid moduleKey is required.');
+      }
+      if (data.enabled) {
+        if (!updatedModules.includes(moduleKey)) {
+          updatedModules.push(moduleKey);
+        }
+      } else {
+        updatedModules = updatedModules.filter((k) => k !== moduleKey);
+      }
+    } else if (Array.isArray(data.enabledModules)) {
+      updatedModules = Array.from(new Set(data.enabledModules.map((k) => String(k).trim()).filter(Boolean)));
+    } else {
+      throw new Error('Please provide either moduleKey with enabled flag or enabledModules array.');
+    }
+
+    shop.enabledModules = updatedModules;
+    await shop.save();
+
+    // Record audit log
+    if (req && req.user?.role === 'SUPER_ADMIN') {
+      auditLogService.recordActivity({
+        req,
+        action: 'WORKSHOP_MODULES_UPDATED',
+        category: 'Workshop',
+        targetType: 'Workshop',
+        targetId: shop._id,
+        targetName: shop.name,
+        previousData: { enabledModules: previousModules },
+        newData: { enabledModules: updatedModules },
+        reason: data.reason || `Updated module configuration for workshop "${shop.name}"`,
+        status: 'SUCCESS',
+      });
+    }
+
+    return {
+      shopId: shop._id,
+      name: shop.name,
+      code: shop.code,
+      enabledModules: shop.enabledModules,
+    };
   }
 
   /**

@@ -6,6 +6,7 @@ import { User, Lock, Eye, EyeOff, Save, KeyRound, ShieldCheck, Mail, Phone, Buil
 import { Link, Redirect } from 'wouter';
 import api from '../../../services/api.js';
 import { safeSetItem } from '../../../utils/storage.js';
+import { formatDateDMY, formatTime12h, calculateRemainingDays } from '../../../utils/formatters.js';
 
 export const ProfilePage = () => {
   const { user, currentShop, refreshUser } = useAuth();
@@ -337,37 +338,78 @@ export const ProfilePage = () => {
           </Link>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-          <div style={{ padding: '14px', background: '#f8fafc', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Shop Name</span>
-            <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
-              {user?.shopName || currentShop?.name || 'Shop Setup Required'}
-            </div>
-          </div>
+        {(() => {
+          const subShop = currentShop || user?.shop || {};
+          const startDate = subShop.subscriptionStartDate || subShop.subscriptionHistory?.[0]?.startDate || subShop.createdAt;
+          const expiresAt = subShop.subscriptionExpiresAt;
+          const isExpired = (subShop.calculatedStatus || subShop.subscriptionStatus) === 'EXPIRED' ||
+            (expiresAt && new Date(expiresAt).getTime() <= Date.now());
+          const isExpiringSoon = !isExpired && (subShop.calculatedStatus === 'EXPIRING_SOON' || subShop.subscriptionStatus === 'EXPIRING_SOON');
+          const daysRemaining = typeof subShop.daysRemaining === 'number'
+            ? subShop.daysRemaining
+            : calculateRemainingDays(expiresAt);
 
-          <div style={{ padding: '14px', background: '#f8fafc', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Owner Mobile</span>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', marginTop: '4px' }}>
-              {currentShop?.phone || currentShop?.ownerMobile || user?.mobile || '—'}
-            </div>
-          </div>
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px' }}>
+              <div style={{ padding: '14px', background: '#f8fafc', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Shop Name</span>
+                <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
+                  {user?.shopName || currentShop?.name || 'Shop Setup Required'}
+                </div>
+              </div>
 
-          <div style={{ padding: '14px', background: '#f8fafc', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Business Email</span>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', marginTop: '4px' }}>
-              {currentShop?.email || currentShop?.businessEmail || user?.email || '—'}
-            </div>
-          </div>
+              <div style={{ padding: '14px', background: '#f8fafc', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Active Plan</span>
+                <div style={{ fontSize: '14px', fontWeight: '800', color: '#2563eb', marginTop: '4px' }}>
+                  {subShop.subscription || 'Starter Tier'}
+                </div>
+              </div>
 
-          <div style={{ padding: '14px', background: '#f8fafc', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Status</span>
-            <div style={{ marginTop: '4px' }}>
-              <span className={`status-badge ${user?.onboardingCompleted ? 'badge-green' : 'badge-amber'}`}>
-                {user?.onboardingCompleted ? 'Setup Completed' : 'Setup Required'}
-              </span>
+              <div style={{ padding: '14px', background: '#f8fafc', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Plan Start Date</span>
+                <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', marginTop: '4px', fontFamily: 'JetBrains Mono, monospace' }}>
+                  {formatDateDMY(startDate)}
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                  Time: {formatTime12h(startDate)}
+                </div>
+              </div>
+
+              <div style={{ padding: '14px', background: isExpired ? '#fef2f2' : '#f8fafc', borderRadius: 'var(--radius-md)', border: `1px solid ${isExpired ? '#fca5a5' : 'var(--border-color)'}` }}>
+                <span style={{ fontSize: '11px', color: isExpired ? '#b91c1c' : '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Plan Expiry Date</span>
+                <div style={{ fontSize: '14px', fontWeight: '800', color: isExpired ? '#dc2626' : '#0f172a', marginTop: '4px', fontFamily: 'JetBrains Mono, monospace' }}>
+                  {formatDateDMY(expiresAt)}
+                </div>
+                <div style={{ fontSize: '11px', color: isExpired ? '#dc2626' : '#64748b', marginTop: '2px', fontWeight: isExpired ? '700' : '500' }}>
+                  Expiry Time: {formatTime12h(expiresAt)}
+                </div>
+              </div>
+
+              <div style={{ padding: '14px', background: isExpired ? '#fef2f2' : '#f8fafc', borderRadius: 'var(--radius-md)', border: `1px solid ${isExpired ? '#fca5a5' : 'var(--border-color)'}` }}>
+                <span style={{ fontSize: '11px', color: isExpired ? '#b91c1c' : '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Subscription Status</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <span
+                    className={`status-badge ${
+                      isExpired ? 'badge-red' : isExpiringSoon ? 'badge-amber' : 'badge-green'
+                    }`}
+                  >
+                    {isExpired ? 'Expired' : isExpiringSoon ? 'Expiring Soon' : 'Active'}
+                  </span>
+                  <strong style={{ fontSize: '12px', color: isExpired ? '#dc2626' : daysRemaining <= 7 ? '#d97706' : '#059669' }}>
+                    {isExpired ? '0 days' : `${daysRemaining} days left`}
+                  </strong>
+                </div>
+              </div>
+
+              <div style={{ padding: '14px', background: '#f8fafc', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Business Email</span>
+                <div style={{ fontSize: '13.5px', fontWeight: '600', color: '#0f172a', marginTop: '4px' }}>
+                  {currentShop?.email || currentShop?.businessEmail || user?.email || '—'}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          );
+        })()}
       </div>
     </MainLayout>
   );

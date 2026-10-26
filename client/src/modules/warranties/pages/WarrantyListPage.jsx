@@ -34,6 +34,7 @@ import html2pdf from 'html2pdf.js';
 import { formatCurrency } from '../../../utils/formatters.js';
 import { BarcodeGenerator } from '../../../components/common/BarcodeGenerator.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
+import { useApp } from '../../../context/AppContext.jsx';
 import api from '../../../services/api.js';
 
 const sanitizeText = (val) => {
@@ -70,11 +71,23 @@ const formatCustomer = (item) => {
 
 export const WarrantyListPage = () => {
   const { currentShop, user } = useAuth();
+  const { searchQuery: globalSearchQuery, setSearchQuery: setGlobalSearchQuery } = useApp();
   const certificateRef = useRef(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const [warranties, setWarranties] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(globalSearchQuery || '');
+
+  useEffect(() => {
+    if (globalSearchQuery !== undefined) {
+      setSearchQuery(globalSearchQuery);
+    }
+  }, [globalSearchQuery]);
+
+  const handleSearchChange = (val) => {
+    setSearchQuery(val);
+    setGlobalSearchQuery(val);
+  };
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -335,7 +348,7 @@ export const WarrantyListPage = () => {
       {/* Filter & Search Bar */}
       <div className="card" style={{ padding: '16px 20px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="input-wrapper" style={{ flex: 1, minWidth: '260px' }}>
+          <div className="input-wrapper" style={{ flex: 1, minWidth: '260px', position: 'relative' }}>
             <span className="input-icon">
               <Search size={15} />
             </span>
@@ -344,8 +357,30 @@ export const WarrantyListPage = () => {
               className="input-control input-with-icon"
               placeholder="Search warranty by customer, phone, ticket #, IMEI..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => handleSearchChange('')}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#94a3b8',
+                  padding: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                title="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '6px' }}>

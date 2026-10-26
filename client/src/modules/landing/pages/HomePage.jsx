@@ -22,6 +22,7 @@ import {
   FileText
 } from 'lucide-react';
 import { HomeNavbar } from '../components/HomeNavbar.jsx';
+import api from '../../../services/api.js';
 
 export const HomePage = () => {
   useEffect(() => {
@@ -30,64 +31,28 @@ export const HomePage = () => {
   }, []);
 
   const [billingCycle, setBillingCycle] = useState('annual'); // 'monthly' | 'annual'
+  const [plans, setPlans] = useState([]);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
 
-  const plans = [
-    {
-      id: 'starter',
-      name: 'Starter Shop',
-      badge: 'Single Tech & Counter',
-      priceMonthly: 999,
-      priceAnnual: 799,
-      desc: 'Great for independent technicians and single-counter repair shops.',
-      features: [
-        '1 Workshop Location',
-        'Up to 2 Staff Accounts',
-        'Unlimited Invoices & Receipts',
-        'Parts Inventory Management',
-        'Standard Thermal Printing (58mm/80mm)',
-        'Basic Customer History',
-      ],
-      popular: false,
-      btnText: 'Start Free Trial',
-    },
-    {
-      id: 'pro',
-      name: 'Pro Workshop',
-      badge: 'Most Popular',
-      priceMonthly: 2499,
-      priceAnnual: 1999,
-      desc: 'The complete toolkit for busy repair shops and multi-bench teams.',
-      features: [
-        'Up to 2 Workshop Locations',
-        'Up to 8 Staff & Technician Accounts',
-        'Unlimited Invoices & Receipts',
-        'Smart Parts Inventory & Low-Stock Alerts',
-        'Automatic WhatsApp & SMS Notifications',
-        'GST & VAT Tax Reports',
-        'Priority 24/7 Support',
-      ],
-      popular: true,
-      btnText: 'Start 14-Day Free Trial',
-    },
-    {
-      id: 'enterprise',
-      name: 'Franchise Enterprise',
-      badge: 'Multi-Location Chains',
-      priceMonthly: 5999,
-      priceAnnual: 4799,
-      desc: 'Built for service franchises and multi-branch electronics chains.',
-      features: [
-        'Unlimited Workshop Locations',
-        'Unlimited Staff & Granular Roles',
-        'Centralized Multi-Branch Inventory',
-        'Custom Branded Thermal Receipts',
-        'Dedicated Account Manager',
-        'Custom Data Migration & API Access',
-      ],
-      popular: false,
-      btnText: 'Contact Enterprise',
-    },
-  ];
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingPlans(true);
+    api.get('/plans')
+      .then((data) => {
+        if (isMounted && Array.isArray(data)) {
+          setPlans(data);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setPlans([]);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingPlans(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="dark-landing-page">
@@ -304,62 +269,122 @@ export const HomePage = () => {
               </div>
             </div>
 
-            {/* 3 Dark Plan Cards */}
-            <div className="dark-plans-grid">
-              {plans.map((p) => {
-                const currentPrice = billingCycle === 'annual' ? p.priceAnnual : p.priceMonthly;
-
-                return (
+            {/* Dynamic Dark Plan Cards Grid */}
+            {isLoadingPlans ? (
+              <div className="dark-plans-grid">
+                {[1, 2, 3].map((n) => (
                   <div
-                    key={p.id}
-                    className={`dark-plan-card ${p.popular ? 'dark-plan-popular' : ''}`}
+                    key={n}
+                    className="dark-plan-card"
+                    style={{
+                      minHeight: '440px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      opacity: 0.5,
+                    }}
                   >
-                    {p.popular && (
-                      <div className="dark-popular-badge">
-                        <Sparkles size={13} />
-                        <span>MOST POPULAR</span>
-                      </div>
-                    )}
-
-                    <div className="dark-plan-header">
-                      <span className="dark-plan-type-tag">{p.badge}</span>
-                      <h3>{p.name}</h3>
-                      <p>{p.desc}</p>
-                    </div>
-
-                    <div className="dark-plan-price-area">
-                      <div className="dark-price-number">
-                        <span className="currency font-mono">₹</span>
-                        <span className="amount font-mono">{currentPrice.toLocaleString('en-IN')}</span>
-                        <span className="period">/ month</span>
-                      </div>
-                      <span className="dark-billing-cycle-note">
-                        {billingCycle === 'annual' ? 'Billed annually' : 'Billed monthly'}
-                      </span>
-                    </div>
-
-                    <Link
-                      href={`/register?plan=${p.id}`}
-                      className={`dark-btn ${p.popular ? 'dark-btn-primary' : 'dark-btn-outline'} dark-btn-full dark-btn-lg`}
-                    >
-                      <span>{p.btnText}</span>
-                      <ArrowRight size={16} />
-                    </Link>
-
-                    <div className="dark-plan-features-divider" />
-
-                    <ul className="dark-plan-features-list">
-                      {p.features.map((feat, fIdx) => (
-                        <li key={fIdx}>
-                          <Check size={16} className="text-emerald" />
-                          <span>{feat}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="spinner" style={{ width: '28px', height: '28px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#38bdf8', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                    <span style={{ fontSize: '13px', color: '#94a3b8' }}>Loading subscription plans...</span>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : plans.length === 0 ? (
+              <div
+                style={{
+                  textAlign: 'center',
+                  padding: '50px 20px',
+                  backgroundColor: 'rgba(30, 41, 59, 0.4)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  maxWidth: '560px',
+                  margin: '0 auto',
+                }}
+              >
+                <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', marginBottom: '8px' }}>
+                  Subscription Tiers Coming Soon
+                </h3>
+                <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '20px', lineHeight: 1.6 }}>
+                  Our team is updating the current workshop subscription tiers. You can still register your workshop today to access our live platform preview.
+                </p>
+                <Link href="/register" className="dark-btn dark-btn-primary dark-btn-lg">
+                  <span>Register Workshop</span>
+                  <ArrowRight size={16} />
+                </Link>
+              </div>
+            ) : (
+              <div className="dark-plans-grid">
+                {plans.map((p) => {
+                  const isPopular = Boolean(p.isPopular);
+                  const monthly = Number(p.price) || 0;
+                  const annual = p.yearlyPrice > 0 ? Number(p.yearlyPrice) : Math.round(monthly * 0.8);
+                  const currentPrice = billingCycle === 'annual' ? annual : monthly;
+                  const planBadge = p.badge || (isPopular ? 'Most Popular' : 'Workshop Tier');
+                  const staffLimit = p.limitUsers === -1 || p.limitUsers === 'Unlimited' ? 'Unlimited' : `Up to ${p.limitUsers}`;
+                  const techLimit = p.limitTechs === -1 || p.limitTechs === 'Unlimited' ? 'Unlimited' : `Up to ${p.limitTechs}`;
+
+                  return (
+                    <div
+                      key={p._id || p.name}
+                      className={`dark-plan-card ${isPopular ? 'dark-plan-popular' : ''}`}
+                    >
+                      {isPopular && (
+                        <div className="dark-popular-badge">
+                          <Sparkles size={13} />
+                          <span>MOST POPULAR</span>
+                        </div>
+                      )}
+
+                      <div className="dark-plan-header">
+                        <span className="dark-plan-type-tag">{planBadge}</span>
+                        <h3>{p.name}</h3>
+                        <p>{p.description || 'Full workshop management tools, POS thermal billing, and inventory tracking.'}</p>
+                      </div>
+
+                      <div className="dark-plan-price-area">
+                        <div className="dark-price-number">
+                          <span className="currency font-mono">₹</span>
+                          <span className="amount font-mono">{currentPrice.toLocaleString('en-IN')}</span>
+                          <span className="period">/ month</span>
+                        </div>
+                        <span className="dark-billing-cycle-note">
+                          {billingCycle === 'annual' ? 'Billed annually' : 'Billed monthly'}
+                        </span>
+                      </div>
+
+                      <Link
+                        href={`/register?plan=${encodeURIComponent(p.name)}`}
+                        className={`dark-btn ${isPopular ? 'dark-btn-primary' : 'dark-btn-outline'} dark-btn-full dark-btn-lg`}
+                      >
+                        <span>Start 14-Day Free Trial</span>
+                        <ArrowRight size={16} />
+                      </Link>
+
+                      <div className="dark-plan-features-divider" />
+
+                      <ul className="dark-plan-features-list">
+                        <li style={{ color: '#38bdf8', fontWeight: '600' }}>
+                          <Check size={16} className="text-emerald" />
+                          <span>{staffLimit} Staff Accounts</span>
+                        </li>
+                        <li style={{ color: '#38bdf8', fontWeight: '600' }}>
+                          <Check size={16} className="text-emerald" />
+                          <span>{techLimit} Technician Seats</span>
+                        </li>
+                        {(Array.isArray(p.features) ? p.features : []).map((feat, fIdx) => (
+                          <li key={fIdx}>
+                            <Check size={16} className="text-emerald" />
+                            <span>{feat}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </section>
       </main>

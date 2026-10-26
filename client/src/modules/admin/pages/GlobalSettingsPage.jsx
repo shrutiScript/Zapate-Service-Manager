@@ -236,177 +236,200 @@ export const GlobalSettingsPage = ({ defaultTab = 'security' }) => {
       </div>
 
       {activeTab === 'security' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '24px', alignItems: 'stretch' }}>
           {/* Change Password Card */}
-          <div className="card" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
-              <div
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  background: '#fef3c7',
-                  color: '#d97706',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <KeyRound size={20} />
-              </div>
-              <div>
-                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
-                  Update Admin Password
-                </h3>
-                <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>
-                  Update your Super Admin station login password
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleChangePassword} style={{ marginTop: '20px' }}>
-              {/* Current Password */}
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label" htmlFor="admin-curr-pass" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
-                  Current Password
-                </label>
-                <div className="input-wrapper" style={{ position: 'relative' }}>
-                  <span className="input-icon" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
-                    <Lock size={16} />
-                  </span>
-                  <input
-                    id="admin-curr-pass"
-                    type={showCurrent ? 'text' : 'password'}
-                    className="input-control"
-                    style={{ width: '100%', paddingLeft: '38px', paddingRight: '40px', boxSizing: 'border-box' }}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Enter current password (e.g. 123456)"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrent(!showCurrent)}
-                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
-                    aria-label="Toggle current password"
-                  >
-                    {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+          <div
+            className="card"
+            style={{
+              padding: '24px',
+              borderRadius: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              height: '100%',
+              border: '1px solid var(--border-color, #e2e8f0)',
+              background: '#ffffff',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '10px',
+                    background: '#fef3c7',
+                    color: '#d97706',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid #fde68a',
+                    flexShrink: 0,
+                  }}
+                >
+                  <KeyRound size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+                    Update Admin Password
+                  </h3>
+                  <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>
+                    Update your Super Admin station login password
+                  </p>
                 </div>
               </div>
 
-              {/* New Password */}
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label" htmlFor="admin-new-pass" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
-                  New Password
-                </label>
-                <div className="input-wrapper" style={{ position: 'relative' }}>
-                  <span className="input-icon" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
-                    <Lock size={16} />
-                  </span>
-                  <input
-                    id="admin-new-pass"
-                    type={showNew ? 'text' : 'password'}
-                    className="input-control"
-                    style={{ width: '100%', paddingLeft: '38px', paddingRight: '40px', boxSizing: 'border-box' }}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password (min. 6 chars)"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNew(!showNew)}
-                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
-                    aria-label="Toggle new password"
-                  >
-                    {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-
-                {newPassword && (
-                  <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ flex: 1, height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div
-                        style={{
-                          height: '100%',
-                          width: strength.score === 1 ? '33%' : strength.score === 2 ? '66%' : '100%',
-                          background: strength.color,
-                          transition: 'all 0.3s ease',
-                        }}
-                      />
-                    </div>
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: strength.color }}>
-                      {strength.label}
+              <form onSubmit={handleChangePassword} style={{ marginTop: '20px' }}>
+                {/* Current Password */}
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label className="form-label" htmlFor="admin-curr-pass" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                    Current Password
+                  </label>
+                  <div className="input-wrapper" style={{ position: 'relative', width: '100%' }}>
+                    <span className="input-icon">
+                      <Lock size={16} />
                     </span>
+                    <input
+                      id="admin-curr-pass"
+                      type={showCurrent ? 'text' : 'password'}
+                      className="input-control input-with-icon input-with-action"
+                      style={{ width: '100%', paddingLeft: '44px', paddingRight: '44px', boxSizing: 'border-box' }}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Enter current password (e.g. 123456)"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowCurrent(!showCurrent)}
+                      aria-label="Toggle current password"
+                    >
+                      {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
-                )}
-              </div>
-
-              {/* Confirm New Password */}
-              <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label className="form-label" htmlFor="admin-conf-pass" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
-                  Confirm New Password
-                </label>
-                <div className="input-wrapper" style={{ position: 'relative' }}>
-                  <span className="input-icon" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
-                    <Lock size={16} />
-                  </span>
-                  <input
-                    id="admin-conf-pass"
-                    type={showConfirm ? 'text' : 'password'}
-                    className="input-control"
-                    style={{ width: '100%', paddingLeft: '38px', paddingRight: '40px', boxSizing: 'border-box' }}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repeat new password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
-                    aria-label="Toggle confirm password"
-                  >
-                    {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
                 </div>
 
-                {confirmPassword && newPassword && (
-                  <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-                    {confirmPassword === newPassword ? (
-                      <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <CheckCircle2 size={13} /> Passwords match
-                      </span>
-                    ) : (
-                      <span style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <AlertCircle size={13} /> Passwords do not match
-                      </span>
-                    )}
+                {/* New Password */}
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label className="form-label" htmlFor="admin-new-pass" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                    New Password
+                  </label>
+                  <div className="input-wrapper" style={{ position: 'relative', width: '100%' }}>
+                    <span className="input-icon">
+                      <Lock size={16} />
+                    </span>
+                    <input
+                      id="admin-new-pass"
+                      type={showNew ? 'text' : 'password'}
+                      className="input-control input-with-icon input-with-action"
+                      style={{ width: '100%', paddingLeft: '44px', paddingRight: '44px', boxSizing: 'border-box' }}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password (min. 6 chars)"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowNew(!showNew)}
+                      aria-label="Toggle new password"
+                    >
+                      {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
-                )}
-              </div>
 
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isChangingPass}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  fontWeight: '700',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                  border: 'none',
-                }}
-              >
-                <KeyRound size={16} />
-                <span>{isChangingPass ? 'Updating Password...' : 'Save New Admin Password'}</span>
-              </button>
-            </form>
+                  {newPassword && (
+                    <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ flex: 1, height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            height: '100%',
+                            width: strength.score === 1 ? '33%' : strength.score === 2 ? '66%' : '100%',
+                            background: strength.color,
+                            transition: 'all 0.3s ease',
+                          }}
+                        />
+                      </div>
+                      <span style={{ fontSize: '11px', fontWeight: '700', color: strength.color }}>
+                        {strength.label}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Confirm New Password */}
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label" htmlFor="admin-conf-pass" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                    Confirm New Password
+                  </label>
+                  <div className="input-wrapper" style={{ position: 'relative', width: '100%' }}>
+                    <span className="input-icon">
+                      <Lock size={16} />
+                    </span>
+                    <input
+                      id="admin-conf-pass"
+                      type={showConfirm ? 'text' : 'password'}
+                      className="input-control input-with-icon input-with-action"
+                      style={{ width: '100%', paddingLeft: '44px', paddingRight: '44px', boxSizing: 'border-box' }}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Repeat new password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowConfirm(!showConfirm)}
+                      aria-label="Toggle confirm password"
+                    >
+                      {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+
+                  {confirmPassword && newPassword && (
+                    <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                      {confirmPassword === newPassword ? (
+                        <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <CheckCircle2 size={13} /> Passwords match
+                        </span>
+                      ) : (
+                        <span style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <AlertCircle size={13} /> Passwords do not match
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn"
+                  disabled={isChangingPass}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    fontWeight: '700',
+                    fontSize: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    cursor: isChangingPass ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.25)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <KeyRound size={16} />
+                  <span>{isChangingPass ? 'Updating Password...' : 'Save New Admin Password'}</span>
+                </button>
+              </form>
+            </div>
 
             <div
               style={{
@@ -421,137 +444,222 @@ export const GlobalSettingsPage = ({ defaultTab = 'security' }) => {
               }}
             >
               <ShieldCheck size={18} style={{ color: '#10b981', flexShrink: 0 }} />
-              <span style={{ fontSize: '12px', color: '#64748b' }}>
+              <span style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
                 Protected with 256-bit salted bcrypt encryption. Future logins will immediately require your new password.
               </span>
             </div>
           </div>
 
           {/* Admin Identity & Details Card */}
-          <div className="card" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
-              <div
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  background: '#eff6ff',
-                  color: '#2563eb',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <User size={20} />
+          <div
+            className="card"
+            style={{
+              padding: '24px',
+              borderRadius: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              height: '100%',
+              border: '1px solid var(--border-color, #e2e8f0)',
+              background: '#ffffff',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '10px',
+                    background: '#eff6ff',
+                    color: '#2563eb',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid #bfdbfe',
+                    flexShrink: 0,
+                  }}
+                >
+                  <User size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+                    Admin Profile Details
+                  </h3>
+                  <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>
+                    Super Administrator station identity
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
-                  Admin Profile Details
-                </h3>
-                <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>
-                  Super Administrator station identity
-                </p>
-              </div>
+
+              <form onSubmit={handleUpdateProfile} style={{ marginTop: '20px' }}>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label className="form-label" htmlFor="admin-name" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                    Admin Name
+                  </label>
+                  <div className="input-wrapper" style={{ position: 'relative', width: '100%' }}>
+                    <span className="input-icon">
+                      <User size={16} />
+                    </span>
+                    <input
+                      id="admin-name"
+                      type="text"
+                      className="input-control input-with-icon"
+                      style={{ width: '100%', paddingLeft: '44px', boxSizing: 'border-box' }}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Super Admin"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label className="form-label" htmlFor="admin-email" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                    Email Address
+                  </label>
+                  <div className="input-wrapper" style={{ position: 'relative', width: '100%' }}>
+                    <span className="input-icon">
+                      <Mail size={16} />
+                    </span>
+                    <input
+                      id="admin-email"
+                      type="email"
+                      className="input-control input-with-icon"
+                      style={{ width: '100%', paddingLeft: '44px', boxSizing: 'border-box' }}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="admin@gmail.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label className="form-label" htmlFor="admin-mobile" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                    Mobile Number
+                  </label>
+                  <div className="input-wrapper" style={{ position: 'relative', width: '100%' }}>
+                    <span className="input-icon">
+                      <Phone size={16} />
+                    </span>
+                    <input
+                      id="admin-mobile"
+                      type="tel"
+                      className="input-control input-with-icon"
+                      style={{ width: '100%', paddingLeft: '44px', boxSizing: 'border-box' }}
+                      value={mobile}
+                      onChange={(e) => setMobile(e.target.value)}
+                      placeholder="9900000000"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                    Assigned Authority Role
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: '800',
+                        background: '#fffbeb',
+                        color: '#b45309',
+                        border: '1px solid #fde68a',
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d97706' }} />
+                      SUPER_ADMIN
+                    </span>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        background: '#eff6ff',
+                        color: '#1d4ed8',
+                        border: '1px solid #bfdbfe',
+                      }}
+                    >
+                      ID: {user?.userId || 'ADM-001'}
+                    </span>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        background: '#f0fdf4',
+                        color: '#15803d',
+                        border: '1px solid #bbf7d0',
+                      }}
+                    >
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16a34a' }} />
+                      STATUS: ACTIVE
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn"
+                  disabled={isUpdatingProfile}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    fontWeight: '700',
+                    fontSize: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    cursor: isUpdatingProfile ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <Save size={16} />
+                  <span>{isUpdatingProfile ? 'Saving Details...' : 'Save Profile Changes'}</span>
+                </button>
+              </form>
             </div>
 
-            <form onSubmit={handleUpdateProfile} style={{ marginTop: '20px' }}>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label" htmlFor="admin-name" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
-                  Admin Name
-                </label>
-                <div className="input-wrapper" style={{ position: 'relative' }}>
-                  <span className="input-icon" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
-                    <User size={16} />
-                  </span>
-                  <input
-                    id="admin-name"
-                    type="text"
-                    className="input-control"
-                    style={{ width: '100%', paddingLeft: '38px', boxSizing: 'border-box' }}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Super Admin"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label" htmlFor="admin-email" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
-                  Email Address
-                </label>
-                <div className="input-wrapper" style={{ position: 'relative' }}>
-                  <span className="input-icon" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
-                    <Mail size={16} />
-                  </span>
-                  <input
-                    id="admin-email"
-                    type="email"
-                    className="input-control"
-                    style={{ width: '100%', paddingLeft: '38px', boxSizing: 'border-box' }}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@gmail.com"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label" htmlFor="admin-mobile" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
-                  Mobile Number
-                </label>
-                <div className="input-wrapper" style={{ position: 'relative' }}>
-                  <span className="input-icon" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
-                    <Phone size={16} />
-                  </span>
-                  <input
-                    id="admin-mobile"
-                    type="tel"
-                    className="input-control"
-                    style={{ width: '100%', paddingLeft: '38px', boxSizing: 'border-box' }}
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
-                    placeholder="9900000000"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label className="form-label" style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
-                  Assigned Authority Role
-                </label>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <span className="status-badge badge-amber" style={{ padding: '6px 12px', fontSize: '12px', fontWeight: '800' }}>
-                    SUPER_ADMIN
-                  </span>
-                  <span className="status-badge badge-blue" style={{ padding: '6px 12px', fontSize: '12px' }}>
-                    ID: {user?.userId || 'ADM-001'}
-                  </span>
-                  <span className="status-badge badge-green" style={{ padding: '6px 12px', fontSize: '12px' }}>
-                    STATUS: ACTIVE
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-secondary"
-                disabled={isUpdatingProfile}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  fontWeight: '700',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                }}
-              >
-                <Save size={16} />
-                <span>{isUpdatingProfile ? 'Saving Details...' : 'Save Profile Changes'}</span>
-              </button>
-            </form>
+            <div
+              style={{
+                marginTop: '20px',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+              }}
+            >
+              <CheckCircle2 size={18} style={{ color: '#2563eb', flexShrink: 0 }} />
+              <span style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
+                Master Super Admin identity active. Profile updates synchronize across all branches and audit logs.
+              </span>
+            </div>
           </div>
         </div>
       )}

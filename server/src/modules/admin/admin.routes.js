@@ -12,6 +12,8 @@ router.use(requireRoles('SUPER_ADMIN'));
 // Platform Overview & Audits
 router.get('/overview', controller.getOverview);
 router.get('/dashboard-stats', controller.getOverview);
+router.get('/reports', controller.getSystemReports);
+router.get('/system-reports', controller.getSystemReports);
 router.get('/login-activity', controller.getLoginActivity);
 
 // Super Admin Activity & Audit Trail
@@ -24,6 +26,10 @@ router.get('/shops/:id', controller.getShopDetails);
 router.get('/plans', controller.getPlans);
 router.post('/plans', controller.createPlan);
 router.patch('/plans/:id', controller.updatePlan);
+router.post('/plans/:id/archive', controller.archivePlan);
+router.patch('/plans/:id/archive', controller.archivePlan);
+router.post('/plans/:id/unarchive', controller.unarchivePlan);
+router.patch('/plans/:id/unarchive', controller.unarchivePlan);
 router.delete('/plans/:id', controller.deletePlan);
 
 // Global Brands Catalog

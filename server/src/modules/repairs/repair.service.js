@@ -5,6 +5,9 @@ import { validatePrice } from '../../utils/validators.js';
 import { PosService } from '../pos/pos.service.js';
 import { Customer } from '../customers/customer.model.js';
 import { WarrantyService } from '../warranties/warranty.service.js';
+import { Shop } from '../shops/shop.model.js';
+import { Plan } from '../admin/plan.model.js';
+import { getDayRange } from '../../utils/date.js';
 
 export class RepairService {
   async getAll(query = {}, shopId = null, role = null) {
@@ -13,6 +16,10 @@ export class RepairService {
       filter.shopId = shopId;
     } else if (role !== 'SUPER_ADMIN') {
       filter.shopId = '000000000000000000000000';
+    }
+    if (query.date) {
+      const { startOfDay, endOfDay } = getDayRange(query.date, query.timezoneOffset);
+      filter.createdAt = { $gte: startOfDay, $lte: endOfDay };
     }
     if (query.status && query.status !== 'ALL') {
       filter.status = query.status;
@@ -51,6 +58,40 @@ export class RepairService {
   }
 
   async create(data, shopId = null) {
+    if (shopId) {
+      const shop = await Shop.findById(shopId);
+      if (shop) {
+        let plan = null;
+        if (shop.planId) {
+          plan = await Plan.findById(shop.planId);
+        }
+        if (!plan && shop.subscription) {
+          plan = await Plan.findOne({
+            $or: [
+              { name: shop.subscription },
+              { name: shop.subscription.replace(/\s+tier$/i, '') },
+              { name: `${shop.subscription} Tier` },
+            ],
+          });
+        }
+        const ticketLimit = plan ? (plan.repairTicketLimit ?? -1) : -1;
+        if (ticketLimit > 0) {
+          const startOfMonth = new Date();
+          startOfMonth.setDate(1);
+          startOfMonth.setHours(0, 0, 0, 0);
+          const monthlyRepairsCount = await Repair.countDocuments({
+            shopId,
+            createdAt: { $gte: startOfMonth },
+          });
+          if (monthlyRepairsCount >= ticketLimit) {
+            throw new Error(
+              `Monthly repair ticket quota reached: Your workshop's "${plan.name}" plan allows up to ${ticketLimit} repair tickets per month. Please upgrade your subscription plan to continue creating tickets.`
+            );
+          }
+        }
+      }
+    }
+
     const totalCount = await Repair.countDocuments({});
     let ticketNum = 2400 + totalCount + 1;
     let number = data.number || `RF-${ticketNum}`;

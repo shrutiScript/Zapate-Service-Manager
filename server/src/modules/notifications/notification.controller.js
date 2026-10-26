@@ -39,4 +39,22 @@ export class NotificationController {
       next(err);
     }
   }
+
+  async markAsRead(req, res, next) {
+    try {
+      const notification = await notificationService.markAsRead(req.params.id, req.shopId);
+      return sendSuccess(res, notification, 'Notification marked as read');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async markAllAsRead(req, res, next) {
+    try {
+      await notificationService.markAllAsRead(req.shopId);
+      return sendSuccess(res, null, 'All notifications marked as read');
+    } catch (err) {
+      next(err);
+    }
+  }
 }

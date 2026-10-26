@@ -57,6 +57,24 @@ export class ShopController {
     }
   }
 
+  async getModules(req, res, next) {
+    try {
+      const result = await shopService.getModules(req.params.id);
+      return sendSuccess(res, result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updateModules(req, res, next) {
+    try {
+      const result = await shopService.updateModules(req.params.id, req.body, req);
+      return sendSuccess(res, result, 'Workshop module configuration updated successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async blockWorkshop(req, res, next) {
     try {
       const { reason } = req.body || {};
@@ -80,6 +98,36 @@ export class ShopController {
         shop,
         `Workshop "${shop.name}" has been unblocked. Login access has been restored.`
       );
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getSubscription(req, res, next) {
+    try {
+      const shopId = req.params.id || req.shopId;
+      const details = await shopService.getSubscription(shopId);
+      return sendSuccess(res, details);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async renewSubscription(req, res, next) {
+    try {
+      const shopId = req.params.id || req.shopId;
+      const result = await shopService.renewSubscription(shopId, req.body, req);
+      return sendSuccess(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async extendSubscription(req, res, next) {
+    try {
+      const shopId = req.params.id;
+      const result = await shopService.extendSubscription(shopId, req.body, req);
+      return sendSuccess(res, result, result.message);
     } catch (err) {
       next(err);
     }

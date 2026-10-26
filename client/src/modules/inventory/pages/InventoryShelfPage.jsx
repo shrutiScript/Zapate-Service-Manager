@@ -28,16 +28,29 @@ import {
   TrendingUp,
   Box,
 } from 'lucide-react';
+import { useApp } from '../../../context/AppContext.jsx';
 import { toast } from 'sonner';
 import api from '../../../services/api.js';
 
 export const InventoryShelfPage = () => {
+  const { searchQuery: globalSearchQuery, setSearchQuery: setGlobalSearchQuery } = useApp();
   const [activeTab, setActiveTab] = useState('stock'); // 'stock' | 'categories' | 'suppliers' | 'stock-purchase' | 'stock-history'
   const [parts, setParts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [purchases, setPurchases] = useState([]);
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(globalSearchQuery || '');
+
+  useEffect(() => {
+    if (globalSearchQuery !== undefined) {
+      setSearchQuery(globalSearchQuery);
+    }
+  }, [globalSearchQuery]);
+
+  const handleSearchChange = (val) => {
+    setSearchQuery(val);
+    setGlobalSearchQuery(val);
+  };
   const [activeFilter, setActiveFilter] = useState('ALL'); // 'ALL' | 'LOW' | 'IN_STOCK'
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -141,11 +154,16 @@ export const InventoryShelfPage = () => {
 
   // Filtered Parts
   const filteredParts = parts.filter((p) => {
-    const matchesSearch =
-      (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.sku || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.brand || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.model || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q || (
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.sku || '').toLowerCase().includes(q) ||
+      (p.brand || '').toLowerCase().includes(q) ||
+      (p.model || '').toLowerCase().includes(q) ||
+      (p.compatibleModel || '').toLowerCase().includes(q) ||
+      (p.category || '').toLowerCase().includes(q) ||
+      (p.locationRack || '').toLowerCase().includes(q)
+    );
 
     if (!matchesSearch) return false;
     if (activeFilter === 'LOW') return p.qty <= p.minQty;
@@ -532,15 +550,15 @@ export const InventoryShelfPage = () => {
               <input
                 type="text"
                 className="input-control input-with-icon"
-                placeholder="Search by part name, SKU, brand, model..."
+                placeholder="Search by part name, SKU, brand, model, rack..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 style={{ fontSize: '13px' }}
               />
               {searchQuery && (
                 <button
                   type="button"
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => handleSearchChange('')}
                   style={{
                     position: 'absolute',
                     right: '10px',

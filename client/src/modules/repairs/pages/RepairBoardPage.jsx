@@ -33,7 +33,9 @@ import {
   Hash,
   Layers,
   Sparkles,
+  X,
 } from 'lucide-react';
+import { useApp } from '../../../context/AppContext.jsx';
 import { formatCurrency } from '../../../utils/formatters.js';
 import { toast } from 'sonner';
 import api from '../../../services/api.js';
@@ -42,10 +44,22 @@ import { validatePrice } from '../../../utils/validators.js';
 import { InvoiceReceiptView } from '../../pos/components/InvoiceReceiptView.jsx';
 
 export const RepairBoardPage = () => {
+  const { searchQuery: globalSearchQuery, setSearchQuery: setGlobalSearchQuery } = useApp();
   const [jobs, setJobs] = useState([]);
 
   const [activeFilter, setActiveFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(globalSearchQuery || '');
+
+  useEffect(() => {
+    if (globalSearchQuery !== undefined) {
+      setSearchQuery(globalSearchQuery);
+    }
+  }, [globalSearchQuery]);
+
+  const handleSearchChange = (val) => {
+    setSearchQuery(val);
+    setGlobalSearchQuery(val);
+  };
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [viewJobModal, setViewJobModal] = useState(null);
@@ -471,12 +485,19 @@ export const RepairBoardPage = () => {
   };
 
   const filteredJobs = jobs.filter((j) => {
-    const q = searchQuery.toLowerCase();
-    const matchesSearch =
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q || (
       (j.jobNo || '').toLowerCase().includes(q) ||
       (j.customer || '').toLowerCase().includes(q) ||
+      (j.mobile || '').toLowerCase().includes(q) ||
       (j.device || '').toLowerCase().includes(q) ||
-      (j.issue || '').toLowerCase().includes(q);
+      (j.brand || '').toLowerCase().includes(q) ||
+      (j.imei || '').toLowerCase().includes(q) ||
+      (j.issue || '').toLowerCase().includes(q) ||
+      (j.rawStatus || '').toLowerCase().includes(q) ||
+      (j.technician || '').toLowerCase().includes(q) ||
+      (j.priority || '').toLowerCase().includes(q)
+    );
 
     const matchesFilter =
       activeFilter === 'all' ||
@@ -593,22 +614,22 @@ export const RepairBoardPage = () => {
           <h1>Repair Job Cards & Diagnostics</h1>
           <p>Kanban pipeline stages, hardware intake logs, and secure device access control.</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div className="page-header-actions">
           <button
-            className="btn btn-secondary"
+            className="btn-ai-assistant"
             type="button"
             onClick={() => setAiModalState({ isOpen: true, brand: '', model: '', symptoms: '', repairJobId: null, target: 'general' })}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Sparkles size={16} style={{ color: '#2563eb' }} /> Ask AI Repair Assistant
+            <Sparkles size={15} />
+            <span>Ask AI Repair Assistant</span>
           </button>
           <button
-            className="btn btn-primary"
+            className="btn-intake-job"
             type="button"
             onClick={() => setIsCreateModalOpen(true)}
-            style={{ boxShadow: '0 4px 14px rgba(37, 99, 235, 0.3)' }}
           >
-            <Plus size={16} /> Intake New Repair Job
+            <Plus size={16} />
+            <span>Intake New Repair Job</span>
           </button>
         </div>
       </div>
@@ -718,20 +739,40 @@ export const RepairBoardPage = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="input-wrapper" style={{ width: '280px' }}>
+            <div className="input-wrapper" style={{ width: '300px', position: 'relative' }}>
               <span className="input-icon">
                 <Search size={15} />
               </span>
               <input
                 type="text"
                 className="input-control input-with-icon"
-                placeholder="Search ticket #, customer, model..."
+                placeholder="Search ticket #, customer, IMEI, model..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => handleSearchChange('')}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
-
-
           </div>
         </div>
       </div>

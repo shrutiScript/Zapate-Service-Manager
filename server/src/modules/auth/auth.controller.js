@@ -2,6 +2,7 @@ import { AuthService } from './auth.service.js';
 import { Shop } from '../shops/shop.model.js';
 import { sendSuccess, sendCreated } from '../../utils/response.js';
 import { auditLogService } from '../admin/auditLog.service.js';
+import { subscriptionService } from '../shops/subscription.service.js';
 
 const authService = new AuthService();
 
@@ -74,6 +75,10 @@ export class AuthController {
         shop = await Shop.findById(user.shopId);
       }
 
+      const now = new Date();
+      const daysRemaining = shop ? subscriptionService.getDaysRemaining(shop, now) : 0;
+      const calculatedStatus = shop ? subscriptionService.calculateStatus(shop, now) : 'ACTIVE';
+
       const verifiedIdentity = {
         id: user._id || user.id,
         name: user.name,
@@ -83,6 +88,7 @@ export class AuthController {
         shopId: user.role === 'SHOP_OWNER' ? user.shopId : null,
         shopName: shop ? shop.name : null,
         shopCode: shop ? shop.code : undefined,
+        serverTime: now,
         shop: shop ? {
           id: shop._id,
           name: shop.name,
@@ -100,6 +106,14 @@ export class AuthController {
           invoicePrefix: shop.invoicePrefix || '',
           termsAndConditions: shop.termsAndConditions || '',
           onboardingCompleted: shop.onboardingCompleted || false,
+          subscription: shop.subscription,
+          subscriptionStartDate: shop.subscriptionStartDate,
+          subscriptionExpiresAt: shop.subscriptionExpiresAt,
+          subscriptionStatus: calculatedStatus,
+          subscriptionPaymentStatus: shop.subscriptionPaymentStatus,
+          subscriptionBillingCycle: shop.subscriptionBillingCycle,
+          daysRemaining,
+          serverTime: now,
         } : null,
         onboardingCompleted:
           user.role === 'SUPER_ADMIN'
@@ -122,4 +136,43 @@ export class AuthController {
       next(err);
     }
   }
+
+  async forgotPassword(req, res, next) {
+    try {
+      const { identifier } = req.body;
+      const reqInfo = {
+        ip: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1',
+        userAgent: req.headers['user-agent'] || '',
+      };
+      const result = await authService.forgotPassword(identifier, reqInfo);
+      return sendSuccess(res, result, 'Verification code generated successfully.');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async verifyResetOtp(req, res, next) {
+    try {
+      const { identifier, otp } = req.body;
+      const result = await authService.verifyResetOtp(identifier, otp);
+      return sendSuccess(res, result, 'Verification code confirmed.');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async resetPassword(req, res, next) {
+    try {
+      const { identifier, otp, resetToken, newPassword } = req.body;
+      const reqInfo = {
+        ip: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1',
+        userAgent: req.headers['user-agent'] || '',
+      };
+      const result = await authService.resetPassword({ identifier, otp, resetToken, newPassword }, reqInfo);
+      return sendSuccess(res, result, 'Password reset successful.');
+    } catch (err) {
+      next(err);
+    }
+  }
 }
+

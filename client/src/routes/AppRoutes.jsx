@@ -12,6 +12,7 @@ import { AboutPage } from '../modules/landing/pages/AboutPage.jsx';
 import { LoginPage } from '../modules/auth/pages/LoginPage.jsx';
 import { RegisterPage } from '../modules/auth/pages/RegisterPage.jsx';
 import { ShopSetupPage } from '../modules/auth/pages/ShopSetupPage.jsx';
+import { ForgotPasswordPage } from '../modules/auth/pages/ForgotPasswordPage.jsx';
 
 // Fallback Redirection for unknown routes: routes authenticated users to their correct dashboard, or unauthenticated users to /login
 const FallbackRedirect = () => {
@@ -57,8 +58,8 @@ export const AppRoutes = () => {
       {/* Auth Public Routes */}
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
-      <Route path="/forgot-password" component={LoginPage} />
-      <Route path="/reset-password" component={LoginPage} />
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/reset-password" component={ForgotPasswordPage} />
 
       {/* Super Admin Control Suite */}
       <Route path="/admin/dashboard">
@@ -146,112 +147,112 @@ export const AppRoutes = () => {
         </ProtectedRoute>
       </Route>
       <Route path="/customers">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="customers">
           <CustomerListPage />
         </ProtectedRoute>
       </Route>
       <Route path="/repairs">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="repairs">
           <RepairBoardPage />
         </ProtectedRoute>
       </Route>
       <Route path="/repair-jobs">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="repairs">
           <RepairBoardPage />
         </ProtectedRoute>
       </Route>
       <Route path="/devices">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="devices">
           <DeviceListPage />
         </ProtectedRoute>
       </Route>
       <Route path="/pos">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="pos">
           <PosCheckoutPage />
         </ProtectedRoute>
       </Route>
       <Route path="/pos-billing">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="pos">
           <PosCheckoutPage />
         </ProtectedRoute>
       </Route>
       <Route path="/quick-sales">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="pos">
           <PosCheckoutPage />
         </ProtectedRoute>
       </Route>
       <Route path="/pos/invoices/:id">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="pos">
           <InvoiceDetailsPage />
         </ProtectedRoute>
       </Route>
       <Route path="/invoices/:id">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="pos">
           <InvoiceDetailsPage />
         </ProtectedRoute>
       </Route>
       <Route path="/payments">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="payments">
           <PaymentLedgerPage />
         </ProtectedRoute>
       </Route>
       <Route path="/payment-ledger">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="payments">
           <PaymentLedgerPage />
         </ProtectedRoute>
       </Route>
       <Route path="/inventory">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="inventory">
           <InventoryShelfPage />
         </ProtectedRoute>
       </Route>
       <Route path="/parts-inventory">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="inventory">
           <InventoryShelfPage />
         </ProtectedRoute>
       </Route>
       <Route path="/suppliers">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="suppliers">
           <SupplierProcurementPage />
         </ProtectedRoute>
       </Route>
       <Route path="/purchases">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="purchases">
           <PurchaseHistoryPage />
         </ProtectedRoute>
       </Route>
       <Route path="/ai-diagnostic">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="repairs">
           <AiDiagnosticPage />
         </ProtectedRoute>
       </Route>
       <Route path="/ai">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="repairs">
           <AiDiagnosticPage />
         </ProtectedRoute>
       </Route>
       <Route path="/warranty">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="warranties">
           <WarrantyListPage />
         </ProtectedRoute>
       </Route>
       <Route path="/warranties">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="warranties">
           <WarrantyListPage />
         </ProtectedRoute>
       </Route>
       <Route path="/warranty-management">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="warranties">
           <WarrantyListPage />
         </ProtectedRoute>
       </Route>
       <Route path="/reports">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="reports">
           <ReportAnalyticsPage />
         </ProtectedRoute>
       </Route>
       <Route path="/settings">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="settings">
           <SettingsPage />
         </ProtectedRoute>
       </Route>
@@ -261,7 +262,7 @@ export const AppRoutes = () => {
         </ProtectedRoute>
       </Route>
       <Route path="/community">
-        <ProtectedRoute>
+        <ProtectedRoute requiredModule="community">
           <CommunityPage />
         </ProtectedRoute>
       </Route>

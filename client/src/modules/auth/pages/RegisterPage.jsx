@@ -20,6 +20,7 @@ import {
   UserCheck,
   Star,
   ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { AppLoading } from '../../../components/common/AppLoading.jsx';
@@ -38,9 +39,15 @@ export const RegisterPage = () => {
   const [duplicateModal, setDuplicateModal] = useState(null);
   const [countdown, setCountdown] = useState(4);
   const timerRef = useRef(null);
+  const [selectedPlan, setSelectedPlan] = useState('');
 
   useEffect(() => {
     document.title = 'Zapate Service Manager | Register Workshop';
+    const params = new URLSearchParams(window.location.search);
+    const plan = params.get('plan');
+    if (plan) {
+      setSelectedPlan(plan);
+    }
   }, []);
 
   useEffect(() => {
@@ -114,6 +121,7 @@ export const RegisterPage = () => {
         email: email.trim().toLowerCase(),
         mobile: mobile.trim(),
         password,
+        plan: selectedPlan || undefined,
       });
       toast.success('Workshop account created! Redirecting to sign in...', { duration: 4000 });
       setLocation(`/login?identifier=${encodeURIComponent(email.trim().toLowerCase())}`);
@@ -247,6 +255,44 @@ export const RegisterPage = () => {
             <h2>Create Workshop Account</h2>
             <p>Register your repair shop and get started in under 2 minutes</p>
           </div>
+
+          {/* Selected Plan Banner if arriving from pricing table */}
+          {selectedPlan && (
+            <div
+              style={{
+                marginBottom: '16px',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                backgroundColor: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '13px',
+                color: '#1e40af',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={16} style={{ color: '#2563eb', flexShrink: 0 }} />
+                <span>Selected Plan: <strong>{selectedPlan}</strong> (14-Day Free Trial included)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPlan('')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  textDecoration: 'underline',
+                  padding: 0,
+                }}
+              >
+                Change
+              </button>
+            </div>
+          )}
 
           {/* Registration Form */}
           <form onSubmit={handleSubmit} noValidate className="ap-form">

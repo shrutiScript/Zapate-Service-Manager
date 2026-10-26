@@ -30,6 +30,17 @@ export class NotificationService {
     return Notification.findOneAndDelete(filter);
   }
 
+  async markAsRead(id, shopId = null) {
+    const filter = { _id: id };
+    if (shopId) filter.shopId = shopId;
+    return Notification.findOneAndUpdate(filter, { status: 'Read' }, { new: true });
+  }
+
+  async markAllAsRead(shopId = null) {
+    const filter = shopId ? { shopId } : {};
+    return Notification.updateMany(filter, { status: 'Read' });
+  }
+
   async getTemplates() {
     return [
       { id: '1', title: 'Job Intake Check-in', template: 'Hello {customerName}, we have received your {deviceModel} (Job {jobCardNumber}). Diagnosis is underway.' },

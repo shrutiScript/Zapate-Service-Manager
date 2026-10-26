@@ -2,11 +2,18 @@ import React, { useEffect } from 'react';
 import { Redirect, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useApp } from '../context/AppContext.jsx';
 import { AppLoading } from '../components/common/AppLoading.jsx';
-import { getActiveToken } from '../utils/sessionManager.js';
+import {
+  getActiveToken,
+  setExpiredNotice,
+  broadcastSubscriptionExpired,
+  clearActiveSession,
+} from '../utils/sessionManager.js';
 
-export const ProtectedRoute = ({ children, adminOnly = false }) => {
+export const ProtectedRoute = ({ children, adminOnly = false, requiredModule = null }) => {
   const { user, authLoading, isAuthenticated, isAdmin } = useAuth();
+  const { isModuleEnabled } = useApp();
   const [location] = useLocation();
 
   // Instant tab-isolated token check
@@ -55,6 +62,29 @@ export const ProtectedRoute = ({ children, adminOnly = false }) => {
     return <Redirect to="/dashboard" replace />;
   }
 
+  // 5. Subscription Expiry Guard for Workshop Users (Direct URL Protection)
+  const shopExpiry = user?.shop?.subscriptionExpiresAt;
+  const isStatusExpired = String(user?.shop?.subscriptionStatus || '').toUpperCase() === 'EXPIRED';
+  if (!isAdmin && ((shopExpiry && new Date().getTime() >= new Date(shopExpiry).getTime()) || isStatusExpired)) {
+    const expiredMsg = 'Your subscription has expired. Please renew your subscription to continue.';
+    setExpiredNotice(expiredMsg);
+    broadcastSubscriptionExpired({ shopId: user?.shopId || user?.shop?.id, message: expiredMsg });
+    clearActiveSession();
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.replace('/login');
+    }
+    return <Redirect to="/login" replace />;
+  }
+
+  // 5. Workshop Module Access Control Guard (Direct URL Protection)
+  if (requiredModule && !isModuleEnabled(requiredModule)) {
+    toast.error(
+      `The '${requiredModule}' module is disabled for your workshop by Platform Admin.`,
+      { id: `module-guard-${requiredModule}` }
+    );
+    return <Redirect to="/dashboard" replace />;
+  }
+
   // First-time owner flow: if onboarding / shop setup is not completed, redirect to /shop-setup
   if (user.role === 'SHOP_OWNER' && !user.onboardingCompleted && location !== '/shop-setup') {
     return <Redirect to="/shop-setup" replace />;
@@ -62,4 +92,3 @@ export const ProtectedRoute = ({ children, adminOnly = false }) => {
 
   return children;
 };
-

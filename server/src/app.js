@@ -20,6 +20,8 @@ import { reportRoutes } from './modules/reports/report.routes.js';
 import { settingsRoutes } from './modules/settings/settings.routes.js';
 import { aiRoutes } from './modules/ai/ai.routes.js';
 import { warrantyRoutes } from './modules/warranties/warranty.routes.js';
+import { planRoutes } from './modules/admin/plan.routes.js';
+import { searchRoutes } from './modules/search/search.routes.js';
 
 import { errorMiddleware } from './middleware/errorMiddleware.js';
 import { notFoundMiddleware } from './middleware/notFoundMiddleware.js';
@@ -100,6 +102,8 @@ export function createApp() {
   v1.use('/settings', settingsRoutes);
   v1.use('/ai', aiRoutes);
   v1.use('/warranties', warrantyRoutes);
+  v1.use('/plans', planRoutes);
+  v1.use('/search', searchRoutes);
 
   app.use('/api/v1', v1);
   app.use('/api', v1);

@@ -4,10 +4,13 @@ import { SparePart } from '../inventory/inventory.model.js';
 import { Invoice } from '../pos/pos.model.js';
 import { Purchase } from '../purchases/purchase.model.js';
 import { UsedMobile } from '../used-mobiles/usedMobile.model.js';
-import { PaymentLedger } from '../payments/payment.model.js';
+import { Payment, PaymentLedger } from '../payments/payment.model.js';
+import { Shop } from '../shops/shop.model.js';
+import { subscriptionService } from '../shops/subscription.service.js';
+import { getDayRange } from '../../utils/date.js';
 
 export class ReportService {
-  async getDashboardStats(shopId = null, role = null) {
+  async getDashboardStats(shopId = null, role = null, options = {}) {
     let filter = {};
     if (shopId) {
       filter = { shopId };
@@ -15,91 +18,166 @@ export class ReportService {
       filter = { shopId: '000000000000000000000000' };
     }
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const { startOfDay, endOfDay, selectedDate, timezoneOffset } = getDayRange(options?.date, options?.timezoneOffset);
+    const dateWindow = { $gte: startOfDay, $lte: endOfDay };
 
     const [
-      todayRepairs,
+      dateRepairs,
       pendingRepairs,
       completedRepairs,
-      readyForDelivery,
+      readyOnDateCount,
+      totalReadyCount,
+      dateCustomers,
       totalCustomers,
       totalInventory,
       lowStockItems,
-      invoices,
+      invoicesOnDate,
+      allInvoices,
       intakeCount,
       inProgressCount,
       readyCount,
       deliveredCount,
-      recentPaymentsDocs,
+      paymentsDocs,
+      ledgerDocs,
       lowStockListDocs,
       recentRepairsDocs,
     ] = await Promise.all([
-      Repair.countDocuments({ ...filter, createdAt: { $gte: startOfDay } }),
+      // 1. Repair jobs created on that date
+      Repair.countDocuments({ ...filter, createdAt: dateWindow }),
+
+      // 2. Active repairs created on or before that date still open
       Repair.countDocuments({
         ...filter,
+        createdAt: { $lte: endOfDay },
         status: { $nin: ['Delivered', 'Cancelled', 'Returned Unrepaired'] },
       }),
+
+      // 3. Completed repairs delivered/finished on that date
       Repair.countDocuments({
         ...filter,
         status: { $in: ['Delivered', 'Completed'] },
+        $or: [{ updatedAt: dateWindow }, { createdAt: dateWindow }],
       }),
+
+      // 4a. Ready for delivery transitioned on that date
       Repair.countDocuments({
         ...filter,
         status: { $in: ['Ready for Delivery', 'Ready for Pickup'] },
+        $or: [{ updatedAt: dateWindow }, { createdAt: dateWindow }],
       }),
+
+      // 4b. Total ready for delivery awaiting pickup up to that date
+      Repair.countDocuments({
+        ...filter,
+        status: { $in: ['Ready for Delivery', 'Ready for Pickup'] },
+        createdAt: { $lte: endOfDay },
+      }),
+
+      // 5. New customer registrations on that date
+      Customer.countDocuments({ ...filter, createdAt: dateWindow }),
+
+      // 6. Total registered customer profiles
       Customer.countDocuments(filter),
+
+      // 7. Total inventory parts
       SparePart.countDocuments(filter),
+
+      // 8. Low stock alert count
       SparePart.countDocuments({
         ...filter,
         $or: [{ status: 'Low Stock' }, { status: 'Out of Stock' }, { quantity: { $lte: 5 } }],
       }),
+
+      // 9. Invoices created on that date
+      Invoice.find({ ...filter, createdAt: dateWindow }).sort({ createdAt: -1 }),
+
+      // 10. All invoices for cumulative receivables
       Invoice.find(filter).sort({ createdAt: -1 }),
+
+      // 11-14. Pipeline breakdown for that date
       Repair.countDocuments({
         ...filter,
         status: { $in: ['Device Received', 'Diagnosis Pending', 'Diagnosis Completed', 'Waiting Approval', 'Received'] },
+        $or: [{ createdAt: dateWindow }, { updatedAt: dateWindow }],
       }),
       Repair.countDocuments({
         ...filter,
         status: { $in: ['Repair in Progress', 'Waiting Parts', 'Parts Ordered', 'In Progress'] },
+        $or: [{ createdAt: dateWindow }, { updatedAt: dateWindow }],
       }),
       Repair.countDocuments({
         ...filter,
         status: { $in: ['Ready for Delivery', 'Ready for Pickup', 'Quality Check'] },
+        $or: [{ createdAt: dateWindow }, { updatedAt: dateWindow }],
       }),
       Repair.countDocuments({
         ...filter,
         status: { $in: ['Delivered', 'Completed'] },
+        $or: [{ createdAt: dateWindow }, { updatedAt: dateWindow }],
       }),
-      PaymentLedger.find(filter).sort({ createdAt: -1 }).limit(5),
+
+      // 15. Payments recorded on that date using paymentDate / createdAt
+      Payment.find({
+        ...filter,
+        $or: [{ paymentDate: dateWindow }, { createdAt: dateWindow }],
+      }).sort({ paymentDate: -1, createdAt: -1 }).limit(10),
+
+      // 16. PaymentLedger recorded on that date
+      PaymentLedger.find({
+        ...filter,
+        createdAt: dateWindow,
+      }).sort({ createdAt: -1 }).limit(10),
+
+      // 17. Low stock list
       SparePart.find({
         ...filter,
         $or: [{ status: 'Low Stock' }, { status: 'Out of Stock' }, { quantity: { $lte: 5 } }],
       }).sort({ quantity: 1 }).limit(5),
-      Repair.find(filter).sort({ createdAt: -1 }).limit(6),
+
+      // 18. Recent repairs created on that date
+      Repair.find({
+        ...filter,
+        createdAt: dateWindow,
+      }).sort({ createdAt: -1 }).limit(6),
     ]);
 
-    const todayInvoices = invoices.filter((i) => new Date(i.createdAt) >= startOfDay);
-    const todaySales = todayInvoices.reduce((sum, i) => sum + (i.total || 0), 0);
-    const pendingDueAmount = invoices.reduce((sum, i) => sum + (i.dueAmount || 0), 0);
+    const readyForDelivery = readyOnDateCount > 0 ? readyOnDateCount : totalReadyCount;
+    const dateSales = invoicesOnDate.reduce((sum, i) => sum + (i.total || 0), 0);
+    const dateDueAmount = invoicesOnDate.reduce((sum, i) => sum + (i.dueAmount || 0), 0);
+    const allPendingDueAmount = allInvoices.reduce((sum, i) => sum + (i.dueAmount || 0), 0);
 
-    // Format recent payments (fallback to recent invoices if ledger is empty)
-    let recentPayments = recentPaymentsDocs.map((p) => ({
-      date: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Today',
-      customer: p.customerName || 'Client',
-      amount: p.amount || 0,
-      method: p.method || 'UPI',
-      status: 'Completed',
-    }));
-
-    if (recentPayments.length === 0 && invoices.length > 0) {
-      recentPayments = invoices.slice(0, 4).map((i) => ({
-        date: i.createdAt ? new Date(i.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Today',
-        customer: i.customerName || 'Client',
-        amount: i.paidAmount !== undefined ? i.paidAmount : (i.total || 0),
-        method: i.paymentMethod || 'UPI',
+    // Format payments recorded on that date
+    let recentPayments = [];
+    if (paymentsDocs.length > 0) {
+      recentPayments = paymentsDocs.map((p) => {
+        const pDate = p.paymentDate || p.createdAt;
+        return {
+          date: pDate ? new Date(pDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : selectedDate,
+          customer: p.customerName || 'Client',
+          amount: p.amount || 0,
+          method: p.paymentMethod || 'UPI',
+          status: 'Completed',
+        };
+      });
+    } else if (ledgerDocs.length > 0) {
+      recentPayments = ledgerDocs.map((l) => ({
+        date: l.createdAt ? new Date(l.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : selectedDate,
+        customer: l.customerName || 'Client',
+        amount: l.amount || 0,
+        method: l.method || 'UPI',
         status: 'Completed',
       }));
+    } else if (invoicesOnDate.length > 0) {
+      recentPayments = invoicesOnDate
+        .filter((i) => (i.paidAmount || 0) > 0)
+        .slice(0, 5)
+        .map((i) => ({
+          date: i.createdAt ? new Date(i.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : selectedDate,
+          customer: i.customerName || 'Client',
+          amount: i.paidAmount !== undefined ? i.paidAmount : (i.total || 0),
+          method: i.paymentMethod || 'UPI',
+          status: 'Completed',
+        }));
     }
 
     // Format low stock alerts
@@ -110,7 +188,7 @@ export class ReportService {
       threshold: item.minimumQuantity || 10,
     }));
 
-    // Format activity timeline
+    // Format activity timeline strictly for that date
     const recentActivities = [];
     for (const r of recentRepairsDocs) {
       const timeStr = r.createdAt ? new Date(r.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '10:00 AM';
@@ -137,14 +215,48 @@ export class ReportService {
       });
     }
 
+    let subscription = null;
+    const serverTime = new Date();
+    if (shopId) {
+      try {
+        const currentShop = await Shop.findById(shopId);
+        if (currentShop) {
+          const daysRemaining = subscriptionService.getDaysRemaining(currentShop, serverTime);
+          const liveStatus = subscriptionService.calculateStatus(currentShop, serverTime);
+          subscription = {
+            shopId: currentShop._id,
+            plan: currentShop.subscription,
+            startDate: currentShop.subscriptionStartDate,
+            expiresAt: currentShop.subscriptionExpiresAt,
+            status: liveStatus,
+            paymentStatus: currentShop.subscriptionPaymentStatus,
+            billingCycle: currentShop.subscriptionBillingCycle,
+            daysRemaining,
+            serverTime,
+          };
+        }
+      } catch (_) {}
+    }
+
     return {
-      todayRepairs: todayRepairs || 0,
+      selectedDate,
+      startOfDay,
+      endOfDay,
+      timezoneOffset,
+      todayRepairs: dateRepairs || 0,
+      dateRepairs: dateRepairs || 0,
+      activeRepairs: dateRepairs || 0,
+      totalActiveRepairs: pendingRepairs || 0,
       pendingRepairs: pendingRepairs || 0,
       completedRepairs: completedRepairs || 0,
       readyForDelivery: readyForDelivery || 0,
-      todaySales: todaySales || 0,
-      pendingDueAmount: pendingDueAmount || 0,
-      totalCustomers: totalCustomers || 0,
+      todaySales: dateSales || 0,
+      dateSales: dateSales || 0,
+      pendingDueAmount: dateDueAmount > 0 ? dateDueAmount : allPendingDueAmount,
+      allPendingDueAmount: allPendingDueAmount || 0,
+      totalCustomers: dateCustomers > 0 ? dateCustomers : totalCustomers,
+      dateCustomers: dateCustomers || 0,
+      allCustomersCount: totalCustomers || 0,
       totalInventory: totalInventory || 0,
       lowStockItemsCount: lowStockItems || 0,
       pipeline: {
@@ -155,7 +267,9 @@ export class ReportService {
       },
       recentPayments,
       lowStockList,
-      recentActivities: recentActivities.slice(0, 4),
+      recentActivities: recentActivities.slice(0, 6),
+      subscription,
+      serverTime,
     };
   }
 
@@ -221,54 +335,109 @@ export class ReportService {
     };
   }
 
-  async getAnalytics(shopId = null) {
+  async getAnalytics(shopId = null, range = 'all') {
     const filter = shopId ? { shopId } : {};
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
+    let startDate = null;
+    const now = new Date();
+    if (range === 'today') {
+      startDate = new Date(now);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (range === '7d' || range === 'week') {
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 7);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (range === '30d' || range === 'month') {
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 30);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (range === '90d') {
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 90);
+      startDate.setHours(0, 0, 0, 0);
+    }
 
-    const [invoices, repairs] = await Promise.all([
-      Invoice.find({ ...filter, createdAt: { $gte: sevenDaysAgo } }),
-      Repair.find({ ...filter, createdAt: { $gte: sevenDaysAgo } }),
+    const rangeFilter = startDate ? { ...filter, createdAt: { $gte: startDate } } : filter;
+
+    const [allInvoices, allRepairs, rangeInvoices, rangeRepairs] = await Promise.all([
+      Invoice.find(filter).sort({ createdAt: -1 }),
+      Repair.find(filter).sort({ createdAt: -1 }),
+      Invoice.find(rangeFilter).sort({ createdAt: -1 }),
+      Repair.find(rangeFilter).sort({ createdAt: -1 }),
     ]);
 
-    const totalRevenue = invoices.reduce((sum, i) => sum + (i.total || 0), 0);
-    const completedRepairs = repairs.filter((r) => r.status === 'Completed' || r.status === 'Delivered').length;
-    const avgJobValue = repairs.length > 0
-      ? Math.round(repairs.reduce((sum, r) => sum + (r.finalAmount || r.estimatedAmount || 0), 0) / repairs.length)
-      : 0;
+    const activeInvoices = range === 'all' || !startDate ? allInvoices : rangeInvoices;
+    const activeRepairs = range === 'all' || !startDate ? allRepairs : rangeRepairs;
+
+    const totalRevenue = activeInvoices.reduce((sum, i) => sum + (i.total || 0), 0);
+    const totalCollected = activeInvoices.reduce((sum, i) => sum + (i.paidAmount !== undefined ? i.paidAmount : (i.total || 0)), 0);
+    const totalDue = activeInvoices.reduce((sum, i) => sum + (i.dueAmount || 0), 0);
+    const completedRepairs = activeRepairs.filter((r) => r.status === 'Completed' || r.status === 'Delivered').length;
+    const avgJobValue = activeRepairs.length > 0
+      ? Math.round(activeRepairs.reduce((sum, r) => sum + (r.finalAmount || r.estimatedAmount || 0), 0) / activeRepairs.length)
+      : (activeInvoices.length > 0 ? Math.round(totalRevenue / activeInvoices.length) : 0);
 
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dailyBreakdown = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dayStart = new Date(d);
-      dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(d);
-      dayEnd.setHours(23, 59, 59, 999);
 
-      const dayInvoices = invoices.filter((inv) => {
-        const t = new Date(inv.createdAt);
-        return t >= dayStart && t <= dayEnd;
-      });
-      const dayRepairs = repairs.filter((rep) => {
-        const t = new Date(rep.createdAt);
-        return t >= dayStart && t <= dayEnd;
+    if (range === '7d' || range === 'week') {
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dayStart = new Date(d);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(d);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        const dayInvoices = activeInvoices.filter((inv) => {
+          const t = new Date(inv.createdAt);
+          return t >= dayStart && t <= dayEnd;
+        });
+        const dayRepairs = activeRepairs.filter((rep) => {
+          const t = new Date(rep.createdAt);
+          return t >= dayStart && t <= dayEnd;
+        });
+
+        dailyBreakdown.push({
+          day: days[d.getDay()],
+          val: dayInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0),
+          count: dayRepairs.length,
+        });
+      }
+    } else {
+      const dateMap = {};
+      activeInvoices.forEach((inv) => {
+        const d = new Date(inv.createdAt);
+        const dateKey = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        dateMap[dateKey] = (dateMap[dateKey] || 0) + (inv.total || 0);
       });
 
-      const dayTotal = dayInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
-      dailyBreakdown.push({
-        day: days[d.getDay()],
-        val: dayTotal,
-        count: dayRepairs.length,
-      });
+      const dateKeys = Object.keys(dateMap);
+      if (dateKeys.length > 0) {
+        dateKeys.slice(0, 8).reverse().forEach((key) => {
+          dailyBreakdown.push({
+            day: key,
+            val: dateMap[key],
+            count: activeRepairs.filter((r) => new Date(r.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) === key).length,
+          });
+        });
+      } else {
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          dailyBreakdown.push({
+            day: days[d.getDay()],
+            val: 0,
+            count: 0,
+          });
+        }
+      }
     }
 
     const catMap = {};
-    repairs.forEach((r) => {
-      const cat = r.problem || r.deviceModel || 'General Repair';
+    activeRepairs.forEach((r) => {
+      let cat = r.issue || r.problem || (r.device && r.device.model) || 'General Repair';
+      if (cat.length > 36) cat = cat.slice(0, 33) + '...';
       const amt = r.finalAmount || r.estimatedAmount || 0;
       if (!catMap[cat]) catMap[cat] = { count: 0, amount: 0 };
       catMap[cat].count += 1;
@@ -279,18 +448,72 @@ export class ReportService {
       name: k,
       amount: catMap[k].amount,
       count: catMap[k].count,
-      share: totalRevenue > 0 ? `${Math.round((catMap[k].amount / totalRevenue) * 100)}%` : '0%',
+      share: totalRevenue > 0 ? `${Math.round((catMap[k].amount / totalRevenue) * 100)}%` : `${Math.round((catMap[k].count / (activeRepairs.length || 1)) * 100)}%`,
     }));
 
+    const methodMap = {};
+    activeInvoices.forEach((inv) => {
+      const m = inv.paymentMethod || 'Cash';
+      methodMap[m] = (methodMap[m] || 0) + (inv.total || 0);
+    });
+
+    const paymentMethods = Object.keys(methodMap).map((m) => ({
+      name: m,
+      amount: methodMap[m],
+      share: totalRevenue > 0 ? `${Math.round((methodMap[m] / totalRevenue) * 100)}%` : '0%',
+    }));
+
+    const statusMap = {};
+    activeRepairs.forEach((r) => {
+      const s = r.status || 'Device Received';
+      statusMap[s] = (statusMap[s] || 0) + 1;
+    });
+
+    const repairStatuses = Object.keys(statusMap).map((s) => ({
+      status: s,
+      count: statusMap[s],
+      share: activeRepairs.length > 0 ? `${Math.round((statusMap[s] / activeRepairs.length) * 100)}%` : '0%',
+    }));
+
+    const recentTransactions = activeInvoices.slice(0, 10).map((inv) => ({
+      id: inv._id,
+      number: inv.number || inv.orderId || 'INV-0000',
+      customerName: inv.customerName || 'Walk-in Client',
+      device: inv.deviceModel || inv.deviceBrand || (inv.items && inv.items[0]?.name) || 'Service Item',
+      amount: inv.total || 0,
+      paidAmount: inv.paidAmount !== undefined ? inv.paidAmount : (inv.total || 0),
+      dueAmount: inv.dueAmount || 0,
+      paymentMethod: inv.paymentMethod || 'UPI',
+      date: inv.createdAt,
+    }));
+
+    const allTimeRevenue = allInvoices.reduce((sum, i) => sum + (i.total || 0), 0);
+    const allTimeCollected = allInvoices.reduce((sum, i) => sum + (i.paidAmount !== undefined ? i.paidAmount : (i.total || 0)), 0);
+    const allTimeDue = allInvoices.reduce((sum, i) => sum + (i.dueAmount || 0), 0);
+
     return {
+      range,
       weeklyRevenue: totalRevenue,
+      totalRevenue,
+      totalCollected,
+      totalDue,
       completedRepairs,
       avgJobValue,
-      totalRepairsCount: repairs.length,
-      totalInvoicesCount: invoices.length,
+      totalRepairsCount: activeRepairs.length,
+      totalInvoicesCount: activeInvoices.length,
       dailyBreakdown,
       categories,
-      hasData: invoices.length > 0 || repairs.length > 0,
+      paymentMethods,
+      repairStatuses,
+      recentTransactions,
+      allTime: {
+        revenue: allTimeRevenue,
+        collected: allTimeCollected,
+        due: allTimeDue,
+        invoicesCount: allInvoices.length,
+        repairsCount: allRepairs.length,
+      },
+      hasData: allInvoices.length > 0 || allRepairs.length > 0,
     };
   }
 }

@@ -137,6 +137,33 @@ export async function authMiddleware(req, res, next) {
         }
       }
 
+      // ── STRICT SERVER-SIDE SUBSCRIPTION EXPIRY ENFORCEMENT ──
+      const now = new Date();
+      const isExpired = shop.subscriptionExpiresAt && now.getTime() >= new Date(shop.subscriptionExpiresAt).getTime();
+      const isStatusExpired = (shop.subscriptionStatus || '').toUpperCase() === 'EXPIRED';
+
+      // Exception: Allow shop renewal and subscription status endpoints so user can renew
+      const reqUrl = (req.originalUrl || req.url || '').toLowerCase();
+      const isRenewalEndpoint = reqUrl.includes('/subscription') || reqUrl.includes('/renew') || reqUrl.includes('/plans');
+
+      if ((isExpired || isStatusExpired) && !isRenewalEndpoint) {
+        if (shop.subscriptionStatus !== 'EXPIRED') {
+          shop.subscriptionStatus = 'EXPIRED';
+          shop.save().catch(() => {});
+        }
+
+        return res.status(403).json({
+          success: false,
+          isExpired: true,
+          subscriptionExpired: true,
+          message: 'Your subscription has expired. Please renew your plan to continue.',
+          shopId: shop._id,
+          shopName: shop.name,
+          plan: shop.subscription,
+          expiresAt: shop.subscriptionExpiresAt,
+        });
+      }
+
       if (shopStatus !== 'ACTIVE') {
         return res.status(403).json({
           success: false,

@@ -21,7 +21,9 @@ import {
   Clock,
   Package,
   FileText,
+  X,
 } from 'lucide-react';
+import { useApp } from '../../../context/AppContext.jsx';
 import { toast } from 'sonner';
 import api from '../../../services/api.js';
 import { ReceivePaymentModal } from '../components/ReceivePaymentModal.jsx';
@@ -29,6 +31,7 @@ import { PaymentReceiptModal } from '../components/PaymentReceiptModal.jsx';
 import { InvoiceReceiptView } from '../../pos/components/InvoiceReceiptView.jsx';
 
 export const PaymentLedgerPage = () => {
+  const { searchQuery: globalSearchQuery, setSearchQuery: setGlobalSearchQuery } = useApp();
   const [activeTab, setActiveTab] = useState('due_invoices'); // 'due_invoices' | 'vouchers'
   const [invoices, setInvoices] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -40,7 +43,18 @@ export const PaymentLedgerPage = () => {
     totalInvoicesCount: 0,
   });
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(globalSearchQuery || '');
+
+  useEffect(() => {
+    if (globalSearchQuery !== undefined) {
+      setSearchQuery(globalSearchQuery);
+    }
+  }, [globalSearchQuery]);
+
+  const handleSearchChange = (val) => {
+    setSearchQuery(val);
+    setGlobalSearchQuery(val);
+  };
   const [statusFilter, setStatusFilter] = useState('DUE_ONLY'); // 'DUE_ONLY' | 'ALL' | 'PAID' | 'PARTIALLY_PAID' | 'UNPAID'
   const [typeFilter, setTypeFilter] = useState('ALL'); // 'ALL' | 'UPI' | 'Cash' | 'Card' | 'Bank Transfer'
 
@@ -247,15 +261,37 @@ export const PaymentLedgerPage = () => {
               ))}
             </div>
 
-            <div className="input-wrapper" style={{ width: '320px' }}>
+            <div className="input-wrapper" style={{ width: '320px', position: 'relative' }}>
               <span className="input-icon"><Search size={15} /></span>
               <input
                 type="text"
                 className="input-control input-with-icon"
                 placeholder="Search customer, phone, Invoice #..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => handleSearchChange('')}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           </div>
 
@@ -414,15 +450,37 @@ export const PaymentLedgerPage = () => {
               ))}
             </div>
 
-            <div className="input-wrapper" style={{ width: '320px' }}>
+            <div className="input-wrapper" style={{ width: '320px', position: 'relative' }}>
               <span className="input-icon"><Search size={15} /></span>
               <input
                 type="text"
                 className="input-control input-with-icon"
                 placeholder="Search customer, TXN / Receipt #..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => handleSearchChange('')}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           </div>
 

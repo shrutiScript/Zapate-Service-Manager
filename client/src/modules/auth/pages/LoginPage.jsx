@@ -18,10 +18,13 @@ import {
   Star,
   LogIn,
   UserPlus,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { AppLoading } from '../../../components/common/AppLoading.jsx';
-import { consumeBlockedNotice } from '../../../utils/sessionManager.js';
+import { consumeBlockedNotice, consumeExpiredNotice } from '../../../utils/sessionManager.js';
+import { RenewSubscriptionModal } from '../components/RenewSubscriptionModal.jsx';
 
 export const LoginPage = () => {
   const [, setLocation] = useLocation();
@@ -32,6 +35,9 @@ export const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [autoFilledNotice, setAutoFilledNotice] = useState(false);
   const [blockedNotice, setBlockedNotice] = useState(null);
+  const [expiredNotice, setExpiredNotice] = useState(null);
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [expiredShopDetails, setExpiredShopDetails] = useState(null);
 
   useEffect(() => {
     document.title = 'Zapate Service Manager | Workshop Sign In';
@@ -40,6 +46,13 @@ export const LoginPage = () => {
     if (notice) {
       setBlockedNotice(notice);
       toast.error(notice, { duration: 6000 });
+    }
+
+    // Check if redirected here due to subscription expiry
+    const expNotice = consumeExpiredNotice();
+    if (expNotice) {
+      setExpiredNotice(expNotice);
+      toast.error(expNotice, { duration: 6000 });
     }
   }, []);
 
@@ -94,13 +107,34 @@ export const LoginPage = () => {
         setLocation('/dashboard');
       }
     } catch (err) {
+      const respData = err?.response?.data || {};
+      const isExp =
+        err?.isExpired ||
+        err?.subscriptionExpired ||
+        respData?.isExpired ||
+        respData?.subscriptionExpired ||
+        String(err?.message || '').toLowerCase().includes('subscription has expired') ||
+        String(respData?.message || '').toLowerCase().includes('subscription has expired');
+
+      if (isExp) {
+        const expMsg = respData?.message || err?.message || 'Your subscription has expired. Please renew your plan to continue.';
+        setExpiredNotice(expMsg);
+        setExpiredShopDetails({
+          shopId: err.shopId || respData?.shopId,
+          shopName: err.shopName || respData?.shopName,
+          plan: err.plan || respData?.plan,
+        });
+        toast.error(expMsg, { duration: 6000 });
+        return;
+      }
+
       const msg = String(err?.message || '').toLowerCase();
-      if (msg.includes('blocked') || err?.isBlocked || err?.status === 403) {
+      if (msg.includes('blocked') || err?.isBlocked || respData?.isBlocked) {
         const fullMsg = 'Your workshop account has been blocked by the administrator. Please contact support.';
         setBlockedNotice(fullMsg);
         toast.error(fullMsg, { duration: 6000 });
       } else {
-        toast.error('Invalid User ID or Password.');
+        toast.error(err?.message || 'Invalid User ID or Password.');
       }
     }
   };
@@ -223,6 +257,59 @@ export const LoginPage = () => {
             <p>Sign in to your workshop station</p>
           </div>
 
+          {expiredNotice && (
+            <div
+              className="ap-notice"
+              style={{
+                background: '#fef2f2',
+                border: '1.5px solid #fecaca',
+                color: '#991b1b',
+                marginBottom: '16px',
+                fontSize: '13px',
+                lineHeight: 1.5,
+                padding: '14px',
+                borderRadius: '10px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
+                <AlertTriangle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+                <span>Subscription Expired</span>
+              </div>
+              <p style={{ margin: 0, fontSize: '12.5px', color: '#b91c1c' }}>
+                {expiredNotice}
+              </p>
+              <p style={{ margin: 0, fontSize: '11.5px', color: '#7f1d1d' }}>
+                All workshop data, repair tickets, inventory, and customer records remain safely preserved in the database.
+              </p>
+              {expiredShopDetails?.shopId && (
+                <button
+                  type="button"
+                  onClick={() => setShowRenewModal(true)}
+                  style={{
+                    alignSelf: 'flex-start',
+                    background: '#dc2626',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '8px 14px',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    marginTop: '4px',
+                  }}
+                >
+                  <RefreshCw size={13} /> Renew Plan Now
+                </button>
+              )}
+            </div>
+          )}
+
           {blockedNotice && (
             <div
               className="ap-notice"
@@ -240,7 +327,7 @@ export const LoginPage = () => {
             </div>
           )}
 
-          {autoFilledNotice && !blockedNotice && (
+          {autoFilledNotice && !blockedNotice && !expiredNotice && (
             <div className="ap-notice">
               <CheckCircle2 size={16} />
               Account verified. Please enter your password to continue.
@@ -273,13 +360,12 @@ export const LoginPage = () => {
             <div className="ap-field">
               <div className="ap-field-top">
                 <label htmlFor="li-pw">Password</label>
-                <button
-                  type="button"
+                <Link
+                  href={identifier.trim() ? `/forgot-password?identifier=${encodeURIComponent(identifier.trim())}` : '/forgot-password'}
                   className="ap-forgot"
-                  onClick={() => toast.info('Please contact your Super Admin or workshop manager to reset credentials.')}
                 >
                   Forgot Password?
-                </button>
+                </Link>
               </div>
               <div className="ap-input-wrap">
                 <span className="ap-input-ico">
@@ -338,6 +424,19 @@ export const LoginPage = () => {
           </div>
         </div>
       </div>
+
+      {showRenewModal && (
+        <RenewSubscriptionModal
+          shopId={expiredShopDetails?.shopId}
+          shopName={expiredShopDetails?.shopName}
+          currentPlan={expiredShopDetails?.plan}
+          onClose={() => setShowRenewModal(false)}
+          onSuccess={() => {
+            setExpiredNotice(null);
+            toast.success('Your subscription is now active! Please enter your password to sign in.');
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -29,18 +29,20 @@ import {
   DollarSign,
   ExternalLink,
 } from 'lucide-react';
+import { useApp } from '../../../context/AppContext.jsx';
 import { toast } from 'sonner';
 import api from '../../../services/api.js';
 import { validatePrice } from '../../../utils/validators.js';
 
 export const PosCheckoutPage = () => {
+  const { searchQuery: globalSearchQuery, setSearchQuery: setGlobalSearchQuery } = useApp();
   // Navigation tabs
   const [activeTab, setActiveTab] = useState('checkout'); // 'checkout' | 'invoices'
 
   // Products from inventory
   const [products, setProducts] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(globalSearchQuery || '');
 
   // Form State - Section 1: Customer Information (Optional)
   const [customerName, setCustomerName] = useState('');
@@ -66,7 +68,24 @@ export const PosCheckoutPage = () => {
 
   // Past Invoices state
   const [invoices, setInvoices] = useState([]);
-  const [invoiceSearch, setInvoiceSearch] = useState('');
+  const [invoiceSearch, setInvoiceSearch] = useState(globalSearchQuery || '');
+
+  useEffect(() => {
+    if (globalSearchQuery !== undefined) {
+      setSearchQuery(globalSearchQuery);
+      setInvoiceSearch(globalSearchQuery);
+    }
+  }, [globalSearchQuery]);
+
+  const handleProductSearchChange = (val) => {
+    setSearchQuery(val);
+    setGlobalSearchQuery(val);
+  };
+
+  const handleInvoiceSearchChange = (val) => {
+    setInvoiceSearch(val);
+    setGlobalSearchQuery(val);
+  };
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('ALL'); // 'ALL' | 'REPAIR' | 'QUICK_SALE' | 'PAID' | 'PENDING' | 'UNPAID'
   const [receiptInvoice, setReceiptInvoice] = useState(null);
   const [invoiceToDelete, setInvoiceToDelete] = useState(null);
@@ -583,15 +602,37 @@ export const PosCheckoutPage = () => {
               ))}
             </div>
 
-            <div className="input-wrapper" style={{ width: '340px' }}>
+            <div className="input-wrapper" style={{ width: '340px', position: 'relative' }}>
               <span className="input-icon"><Search size={15} /></span>
               <input
                 type="text"
                 className="input-control input-with-icon"
                 placeholder="Search Invoice #, Order ID, Customer, Model..."
                 value={invoiceSearch}
-                onChange={(e) => setInvoiceSearch(e.target.value)}
+                onChange={(e) => handleInvoiceSearchChange(e.target.value)}
               />
+              {invoiceSearch && (
+                <button
+                  type="button"
+                  onClick={() => handleInvoiceSearchChange('')}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           </div>
 
@@ -821,15 +862,37 @@ export const PosCheckoutPage = () => {
                 ))}
               </div>
 
-              <div className="input-wrapper" style={{ marginBottom: '14px' }}>
+              <div className="input-wrapper" style={{ marginBottom: '14px', position: 'relative' }}>
                 <span className="input-icon"><Search size={15} /></span>
                 <input
                   type="text"
                   className="input-control input-with-icon"
                   placeholder="Quick search chargers, cables, tempered glass, covers, spares..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleProductSearchChange(e.target.value)}
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => handleProductSearchChange('')}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#94a3b8',
+                      padding: '2px',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    title="Clear search"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
 
               {/* Quick Products Grid */}

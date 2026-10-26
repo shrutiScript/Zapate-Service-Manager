@@ -11,6 +11,12 @@ export async function startServer() {
 
   await connectDB();
 
+  // Start periodic subscription expiry background sweeper (runs every 60 seconds)
+  const { checkAndExpireSubscriptions } = await import('./modules/shops/subscription.service.js');
+  setInterval(checkAndExpireSubscriptions, 60000);
+  // Run once immediately on startup
+  checkAndExpireSubscriptions().catch(() => {});
+
   const server = app.listen(PORT, () => {
     console.log(`[Zapate Service Manager Server] Running on http://localhost:${PORT}`);
     console.log(`[Zapate Service Manager API] Versioned endpoints at http://localhost:${PORT}/api/v1`);

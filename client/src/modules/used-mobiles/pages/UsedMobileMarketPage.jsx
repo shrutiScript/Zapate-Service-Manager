@@ -16,15 +16,29 @@ import {
   AlertTriangle,
   Tag,
   TrendingUp,
+  X,
 } from 'lucide-react';
+import { useApp } from '../../../context/AppContext.jsx';
 import { toast } from 'sonner';
 import api from '../../../services/api.js';
 import { DependentDeviceSelect } from '../../../components/common/DependentDeviceSelect.jsx';
 import { validatePrice } from '../../../utils/validators.js';
 
 export const UsedMobileMarketPage = () => {
+  const { searchQuery: globalSearchQuery, setSearchQuery: setGlobalSearchQuery } = useApp();
   const [mobiles, setMobiles] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(globalSearchQuery || '');
+
+  useEffect(() => {
+    if (globalSearchQuery !== undefined) {
+      setSearchQuery(globalSearchQuery);
+    }
+  }, [globalSearchQuery]);
+
+  const handleSearchChange = (val) => {
+    setSearchQuery(val);
+    setGlobalSearchQuery(val);
+  };
   const [activeFilter, setActiveFilter] = useState('ALL'); // 'ALL' | 'In Stock' | 'Sold'
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -367,15 +381,37 @@ export const UsedMobileMarketPage = () => {
               </button>
             </div>
 
-            <div className="input-wrapper" style={{ width: '320px' }}>
+            <div className="input-wrapper" style={{ width: '320px', position: 'relative' }}>
               <span className="input-icon"><Search size={15} /></span>
               <input
                 type="text"
                 className="input-control input-with-icon"
                 placeholder="Search by brand, model, IMEI..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => handleSearchChange('')}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           </div>
 

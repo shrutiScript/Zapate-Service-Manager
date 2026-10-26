@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { MainLayout } from '../../../components/layout/MainLayout.jsx';
+import { KpiCards } from '../../../components/ui/KpiCard/index.js';
 import {
   Search,
   ThumbsUp,
@@ -11,7 +12,6 @@ import {
   HelpCircle,
   CheckCircle2,
   Smartphone,
-  TrendingUp,
   Award,
   Users,
   Flame,
@@ -19,9 +19,9 @@ import {
   ChevronUp,
   Bookmark,
   Share2,
-  Zap,
-  Star,
   BarChart2,
+  Clock,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../../context/AuthContext.jsx';
@@ -33,17 +33,35 @@ const SEED_POSTS = [
     type: 'Question',
     author: 'Apex Devices Hub',
     initials: 'AD',
-    avatarColor: '#6366f1',
+    avatarColor: '#2563eb',
     device: 'Oppo F15',
     title: 'Fingerprint not working after display replacement.',
-    body: 'I replaced the display, but fingerprint is no longer detecting. Has anyone faced this issue? The sensor physically looks intact but software doesn\'t register any touch.',
+    body: "I replaced the display, but fingerprint is no longer detecting. Has anyone faced this issue? The sensor physically looks intact but software doesn't register any touch.",
     likes: 12,
     likedByMe: false,
     saved: false,
     createdAt: '2h ago',
     comments: [
-      { id: 101, author: 'Mobile Care Workshop', initials: 'MC', avatarColor: '#10b981', text: 'Try checking the fingerprint flex connector — it may have gotten pinched during reassembly.', likes: 4, likedByMe: false, time: '1h ago' },
-      { id: 102, author: 'Tech Repair Hub', initials: 'TR', avatarColor: '#f59e0b', text: 'Also verify whether the replacement display is compatible with the original fingerprint sensor. Some OEM panels pair the display to the FP sensor digitally.', likes: 7, likedByMe: false, time: '45m ago' },
+      {
+        id: 101,
+        author: 'Mobile Care Workshop',
+        initials: 'MC',
+        avatarColor: '#10b981',
+        text: 'Try checking the fingerprint flex connector — it may have gotten pinched during reassembly.',
+        likes: 4,
+        likedByMe: false,
+        time: '1h ago',
+      },
+      {
+        id: 102,
+        author: 'Tech Repair Hub',
+        initials: 'TR',
+        avatarColor: '#f59e0b',
+        text: 'Also verify whether the replacement display is compatible with the original fingerprint sensor. Some OEM panels pair the display to the FP sensor digitally.',
+        likes: 7,
+        likedByMe: false,
+        time: '45m ago',
+      },
     ],
   },
   {
@@ -51,7 +69,7 @@ const SEED_POSTS = [
     type: 'Solution',
     author: 'Galaxy Fix Centre',
     initials: 'GF',
-    avatarColor: '#3b82f6',
+    avatarColor: '#059669',
     device: 'Samsung S22 Ultra',
     title: 'S-Pen not detected — fixed by reseating digitizer cable.',
     body: 'After water damage, the S-Pen stopped responding. Opened it up and found the digitizer ribbon cable had lifted slightly on one corner. Reseated it with gentle pressure + heat and it\'s working perfectly now.',
@@ -60,7 +78,16 @@ const SEED_POSTS = [
     saved: false,
     createdAt: '5h ago',
     comments: [
-      { id: 201, author: 'QuickFix Labs', initials: 'QL', avatarColor: '#8b5cf6', text: 'This saved me! Had the exact same issue on an S21 FE. Reseating worked like a charm.', likes: 11, likedByMe: false, time: '4h ago' },
+      {
+        id: 201,
+        author: 'QuickFix Labs',
+        initials: 'QL',
+        avatarColor: '#7c3aed',
+        text: 'This saved me! Had the exact same issue on an S21 FE. Reseating worked like a charm.',
+        likes: 11,
+        likedByMe: false,
+        time: '4h ago',
+      },
     ],
   },
   {
@@ -68,7 +95,7 @@ const SEED_POSTS = [
     type: 'Tip',
     author: 'ProTech Service Hub',
     initials: 'PT',
-    avatarColor: '#ec4899',
+    avatarColor: '#7c3aed',
     device: 'iPhone 13 Pro',
     title: 'Always use Face ID calibration after screen swap on iPhone 13+.',
     body: 'Reminder to everyone: on iPhones 13 and above, replacing the screen without pairing the True Depth camera again will break Face ID. Always use Apple Configurator or a 3rd-party pairing tool. Don\'t skip this step!',
@@ -77,8 +104,26 @@ const SEED_POSTS = [
     saved: false,
     createdAt: '1d ago',
     comments: [
-      { id: 301, author: 'iCare Workshop', initials: 'IC', avatarColor: '#14b8a6', text: 'Golden tip. Burned many times before I learned this the hard way. 🙏', likes: 9, likedByMe: false, time: '22h ago' },
-      { id: 302, author: 'Apex Devices Hub', initials: 'AD', avatarColor: '#6366f1', text: 'Which 3rd party tool do you recommend for pairing?', likes: 3, likedByMe: false, time: '20h ago' },
+      {
+        id: 301,
+        author: 'iCare Workshop',
+        initials: 'IC',
+        avatarColor: '#0284c7',
+        text: 'Golden tip. Burned many times before I learned this the hard way. 🙏',
+        likes: 9,
+        likedByMe: false,
+        time: '22h ago',
+      },
+      {
+        id: 302,
+        author: 'Apex Devices Hub',
+        initials: 'AD',
+        avatarColor: '#2563eb',
+        text: 'Which 3rd party tool do you recommend for pairing?',
+        likes: 3,
+        likedByMe: false,
+        time: '20h ago',
+      },
     ],
   },
   {
@@ -86,7 +131,7 @@ const SEED_POSTS = [
     type: 'Question',
     author: 'BestByte Repairs',
     initials: 'BB',
-    avatarColor: '#f97316',
+    avatarColor: '#ea580c',
     device: 'Redmi Note 12',
     title: 'Charging port replaced but still slow charging — what am I missing?',
     body: 'Replaced the Type-C port on a Redmi Note 12. Charging works but maxes at 5W instead of the expected 67W. Using original charger. Could it be the flex cable or something inside the board?',
@@ -110,8 +155,26 @@ const SEED_POSTS = [
     saved: false,
     createdAt: '2d ago',
     comments: [
-      { id: 501, author: 'QuickFix Labs', initials: 'QL', avatarColor: '#8b5cf6', text: 'What frequency do you run the ultrasonic cleaner at?', likes: 2, likedByMe: false, time: '1d ago' },
-      { id: 502, author: 'Mobile Care Workshop', initials: 'MC', avatarColor: '#10b981', text: 'I use 40kHz — gentle enough not to damage small components.', likes: 5, likedByMe: false, time: '1d ago' },
+      {
+        id: 501,
+        author: 'QuickFix Labs',
+        initials: 'QL',
+        avatarColor: '#7c3aed',
+        text: 'What frequency do you run the ultrasonic cleaner at?',
+        likes: 2,
+        likedByMe: false,
+        time: '1d ago',
+      },
+      {
+        id: 502,
+        author: 'Mobile Care Workshop',
+        initials: 'MC',
+        avatarColor: '#10b981',
+        text: 'I use 40kHz — gentle enough not to damage small components.',
+        likes: 5,
+        likedByMe: false,
+        time: '1d ago',
+      },
     ],
   },
   {
@@ -119,7 +182,7 @@ const SEED_POSTS = [
     type: 'Solution',
     author: 'QuickFix Labs',
     initials: 'QL',
-    avatarColor: '#8b5cf6',
+    avatarColor: '#7c3aed',
     device: 'Vivo Y73',
     title: 'Ghost touch fixed by replacing digitizer (not full LCD combo).',
     body: 'Customer had severe ghost touch on Vivo Y73. Instead of replacing the full LCD+touch combo (expensive), I carefully separated and replaced only the digitizer layer. Cost ₹380 instead of ₹1,800. Customer happy, profit margin better.',
@@ -128,471 +191,21 @@ const SEED_POSTS = [
     saved: false,
     createdAt: '6h ago',
     comments: [
-      { id: 601, author: 'Tech Repair Hub', initials: 'TR', avatarColor: '#f59e0b', text: 'Great cost-saving move! Which glue did you use for rebonding?', likes: 6, likedByMe: false, time: '5h ago' },
+      {
+        id: 601,
+        author: 'Tech Repair Hub',
+        initials: 'TR',
+        avatarColor: '#f59e0b',
+        text: 'Great cost-saving move! Which glue did you use for rebonding?',
+        likes: 6,
+        likedByMe: false,
+        time: '5h ago',
+      },
     ],
   },
 ];
 
-const TYPE_CONFIG = {
-  Question: {
-    icon: HelpCircle,
-    color: '#f59e0b',
-    darkColor: '#d97706',
-    bg: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-    border: '#fde68a',
-    glow: 'rgba(245,158,11,0.15)',
-    label: 'QUESTION',
-  },
-  Solution: {
-    icon: CheckCircle2,
-    color: '#10b981',
-    darkColor: '#059669',
-    bg: 'linear-gradient(135deg, #d1fae5, #a7f3d0)',
-    border: '#6ee7b7',
-    glow: 'rgba(16,185,129,0.15)',
-    label: 'SOLUTION',
-  },
-  Tip: {
-    icon: Lightbulb,
-    color: '#8b5cf6',
-    darkColor: '#7c3aed',
-    bg: 'linear-gradient(135deg, #ede9fe, #ddd6fe)',
-    border: '#c4b5fd',
-    glow: 'rgba(139,92,246,0.15)',
-    label: 'TIP',
-  },
-};
-
-const FILTERS = ['All', 'Questions', 'Solutions', 'Tips'];
-
-/* ─────────────────────────────────────────────────────── */
-/*  Inline styles                                          */
-/* ─────────────────────────────────────────────────────── */
-const S = {
-  /* Page shell */
-  page: {
-    minHeight: '100vh',
-    background: '#f8fafc',
-  },
-
-  /* Hero banner */
-  hero: {
-    background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 35%, #4c1d95 65%, #5b21b6 100%)',
-    borderRadius: 20,
-    padding: '32px 36px',
-    marginBottom: 28,
-    position: 'relative',
-    overflow: 'hidden',
-    boxShadow: '0 20px 60px rgba(99,102,241,0.3), 0 8px 24px rgba(0,0,0,0.15)',
-  },
-  heroBg1: {
-    position: 'absolute', top: -60, right: -60,
-    width: 220, height: 220, borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(167,139,250,0.25) 0%, transparent 70%)',
-    pointerEvents: 'none',
-  },
-  heroBg2: {
-    position: 'absolute', bottom: -40, left: 180,
-    width: 160, height: 160, borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)',
-    pointerEvents: 'none',
-  },
-  heroContent: {
-    position: 'relative', zIndex: 1,
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    gap: 20, flexWrap: 'wrap',
-  },
-  heroIconWrap: {
-    width: 52, height: 52, borderRadius: 14,
-    background: 'rgba(255,255,255,0.15)',
-    backdropFilter: 'blur(10px)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    border: '1px solid rgba(255,255,255,0.2)',
-    boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-  },
-  heroTitle: {
-    color: '#fff', margin: 0,
-    fontSize: 26, fontWeight: '900',
-    letterSpacing: '-0.8px',
-    textShadow: '0 2px 8px rgba(0,0,0,0.3)',
-  },
-  heroSubtitle: {
-    color: '#c4b5fd', margin: '6px 0 0',
-    fontSize: 13, fontWeight: '500', letterSpacing: '0.1px',
-  },
-  heroDots: {
-    display: 'flex', gap: 6, marginTop: 14,
-  },
-  heroDot: (color) => ({
-    width: 8, height: 8, borderRadius: '50%', background: color,
-    boxShadow: `0 0 8px ${color}`,
-  }),
-  heroBtn: {
-    background: 'rgba(255,255,255,0.95)',
-    color: '#4f46e5', fontWeight: '800', fontSize: 13,
-    display: 'flex', alignItems: 'center', gap: 8,
-    padding: '11px 22px', borderRadius: 12, border: 'none', cursor: 'pointer',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-    backdropFilter: 'blur(10px)',
-    transition: 'all 0.2s',
-    letterSpacing: '-0.2px',
-    flexShrink: 0,
-  },
-
-  /* Toolbar: search + filters */
-  toolbar: {
-    display: 'flex', gap: 12, marginBottom: 22,
-    flexWrap: 'wrap', alignItems: 'center',
-  },
-  searchWrap: {
-    flex: 1, minWidth: 220, position: 'relative',
-  },
-  searchIcon: {
-    position: 'absolute', left: 14, top: '50%',
-    transform: 'translateY(-50%)',
-    color: '#94a3b8', pointerEvents: 'none',
-  },
-  searchInput: {
-    width: '100%', paddingLeft: 42, paddingRight: 16,
-    paddingTop: 10, paddingBottom: 10,
-    border: '1.5px solid #e2e8f0',
-    borderRadius: 12, fontSize: 13, fontWeight: '500',
-    background: '#fff', color: '#0f172a', outline: 'none',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
-    boxSizing: 'border-box',
-  },
-  filterGroup: {
-    display: 'flex', gap: 6, flexWrap: 'wrap',
-    background: '#fff', borderRadius: 12, padding: 4,
-    border: '1.5px solid #e2e8f0',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-  },
-  filterBtn: (active) => ({
-    padding: '7px 18px', borderRadius: 9, fontSize: 12,
-    fontWeight: '700', cursor: 'pointer', border: 'none',
-    background: active ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'transparent',
-    color: active ? '#fff' : '#64748b',
-    transition: 'all 0.2s',
-    boxShadow: active ? '0 4px 12px rgba(99,102,241,0.35)' : 'none',
-    letterSpacing: active ? '-0.2px' : '0',
-  }),
-
-  /* Two-column grid */
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 300px',
-    gap: 22,
-    alignItems: 'start',
-  },
-  feed: {
-    display: 'flex', flexDirection: 'column', gap: 14,
-  },
-
-  /* Post card */
-  card: (type) => ({
-    background: '#fff',
-    borderRadius: 16,
-    border: `1px solid #e8edf5`,
-    overflow: 'hidden',
-    transition: 'all 0.2s',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-    borderLeft: `3.5px solid ${TYPE_CONFIG[type]?.color || '#6366f1'}`,
-  }),
-  cardHeader: {
-    padding: '18px 20px 0',
-  },
-  authorRow: {
-    display: 'flex', alignItems: 'flex-start',
-    justifyContent: 'space-between', marginBottom: 14,
-    gap: 8,
-  },
-  authorLeft: {
-    display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0,
-  },
-  authorInfo: {
-    flex: 1, minWidth: 0,
-  },
-  authorName: {
-    fontWeight: '800', fontSize: 14, color: '#0f172a',
-    letterSpacing: '-0.2px', marginBottom: 4,
-    display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-  },
-  authorMeta: {
-    display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
-  },
-  deviceTag: {
-    display: 'inline-flex', alignItems: 'center', gap: 4,
-    background: '#f1f5f9', color: '#475569',
-    borderRadius: 8, padding: '3px 9px',
-    fontSize: 11, fontWeight: '700', letterSpacing: '0.2px',
-    border: '1px solid #e2e8f0',
-  },
-  authorRight: {
-    display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
-  },
-  timestamp: {
-    fontSize: 11, color: '#94a3b8', fontWeight: '600',
-    whiteSpace: 'nowrap',
-  },
-  saveBtn: (saved) => ({
-    background: saved ? '#eef2ff' : 'none',
-    border: 'none', cursor: 'pointer', padding: '6px 7px',
-    borderRadius: 8, color: saved ? '#6366f1' : '#cbd5e1',
-    transition: 'all 0.2s', display: 'flex', alignItems: 'center',
-  }),
-
-  /* Post content */
-  postTitle: {
-    fontSize: 15.5, fontWeight: '800', color: '#0f172a',
-    margin: '0 0 8px', lineHeight: 1.45, letterSpacing: '-0.3px',
-    padding: '0 20px',
-  },
-  postBody: {
-    fontSize: 13, color: '#475569', lineHeight: 1.65,
-    margin: '0 0 16px', padding: '0 20px',
-  },
-
-  /* Action bar */
-  actionBar: {
-    display: 'flex', alignItems: 'center',
-    padding: '0 8px',
-    borderTop: '1px solid #f1f5f9',
-    background: '#fafbfe',
-  },
-  actionBtn: (active, color) => ({
-    display: 'flex', alignItems: 'center', gap: 6,
-    background: 'none', border: 'none', cursor: 'pointer',
-    padding: '10px 13px', borderRadius: 10,
-    fontSize: 12.5, fontWeight: '700',
-    color: active ? (color || '#6366f1') : '#64748b',
-    transition: 'all 0.15s',
-  }),
-  shareBtn: {
-    display: 'flex', alignItems: 'center', gap: 6,
-    background: 'none', border: 'none', cursor: 'pointer',
-    padding: '10px 13px', borderRadius: 10,
-    fontSize: 12.5, fontWeight: '700', color: '#64748b',
-    transition: 'all 0.15s', marginLeft: 'auto',
-  },
-
-  /* Comments panel */
-  commentsPanel: {
-    padding: '12px 20px 18px',
-    borderTop: '1px solid #f1f5f9',
-    background: '#fbfcff',
-  },
-  commentItem: {
-    display: 'flex', gap: 10, paddingBottom: 12, marginBottom: 12,
-    borderBottom: '1px solid #f1f5f9',
-  },
-  commentBody: { flex: 1 },
-  commentHeader: {
-    display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4,
-  },
-  commentAuthor: {
-    fontWeight: '700', fontSize: 12.5, color: '#0f172a',
-  },
-  commentTime: { fontSize: 11, color: '#94a3b8' },
-  commentText: {
-    fontSize: 13, color: '#475569', lineHeight: 1.55, margin: '0 0 6px',
-  },
-  commentInput: {
-    display: 'flex', gap: 10, marginTop: 12, alignItems: 'center',
-  },
-
-  /* Badge */
-  badge: (type) => {
-    const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.Question;
-    return {
-      display: 'inline-flex', alignItems: 'center', gap: 4,
-      background: cfg.bg, color: cfg.darkColor,
-      borderRadius: 8, padding: '3px 9px',
-      fontSize: 10, fontWeight: '800',
-      border: `1px solid ${cfg.border}`,
-      textTransform: 'uppercase', letterSpacing: '0.5px',
-      whiteSpace: 'nowrap',
-    };
-  },
-
-  /* Avatar */
-  avatar: (color, size) => ({
-    width: size, height: size, borderRadius: '50%', background: color,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: Math.max(10, size * 0.38), fontWeight: '800',
-    color: '#fff', flexShrink: 0,
-    letterSpacing: '-0.3px',
-    boxShadow: `0 0 0 2.5px ${color}25, 0 2px 6px ${color}30`,
-  }),
-
-  /* Empty state */
-  empty: {
-    padding: '56px 24px', textAlign: 'center',
-    background: '#fff', borderRadius: 16, border: '1px solid #e8edf5',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-  },
-
-  /* Sidebar */
-  sidebar: {
-    display: 'flex', flexDirection: 'column', gap: 16,
-  },
-  sideCard: {
-    background: '#fff', borderRadius: 16,
-    border: '1px solid #e8edf5',
-    padding: '18px 20px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-  },
-  sideCardTitle: {
-    fontWeight: '800', fontSize: 13, color: '#0f172a',
-    letterSpacing: '-0.2px',
-  },
-  sideCardHeader: {
-    display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
-  },
-
-  /* Stat cells */
-  statGrid: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8,
-  },
-  statCell: (color) => ({
-    background: `linear-gradient(135deg, ${color}08, ${color}14)`,
-    borderRadius: 12, padding: '14px 12px', textAlign: 'center',
-    border: `1px solid ${color}20`,
-  }),
-  statValue: (color) => ({
-    fontSize: 22, fontWeight: '900', color, lineHeight: 1.1,
-    letterSpacing: '-0.5px',
-  }),
-  statLabel: {
-    fontSize: 10.5, color: '#64748b', fontWeight: '700',
-    marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.5px',
-  },
-
-  /* Contributors */
-  contributorRow: {
-    display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0',
-  },
-  contributorInfo: { flex: 1, minWidth: 0 },
-  contributorName: {
-    fontWeight: '700', fontSize: 12, color: '#0f172a',
-    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-  },
-  contributorSub: {
-    fontSize: 11, color: '#94a3b8', fontWeight: '500',
-  },
-  rankBadge: (rank) => ({
-    width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 9, fontWeight: '900',
-    background: rank === 1 ? 'linear-gradient(135deg,#fbbf24,#f59e0b)' :
-                rank === 2 ? 'linear-gradient(135deg,#94a3b8,#64748b)' :
-                rank === 3 ? 'linear-gradient(135deg,#d97706,#b45309)' :
-                '#f1f5f9',
-    color: rank <= 3 ? '#fff' : '#64748b',
-    boxShadow: rank === 1 ? '0 2px 8px rgba(251,191,36,0.4)' : 'none',
-  }),
-
-  /* Trending */
-  trendRow: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '7px 0',
-  },
-  trendName: {
-    fontSize: 12, color: '#334155', fontWeight: '600',
-  },
-  trendCount: {
-    fontSize: 11, color: '#6366f1', background: '#eef2ff',
-    borderRadius: 20, padding: '3px 10px', fontWeight: '800',
-    border: '1px solid #c7d2fe',
-  },
-
-  /* Modal */
-  modalOverlay: {
-    position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.7)',
-    backdropFilter: 'blur(8px)', zIndex: 200,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-  },
-  modalCard: {
-    maxWidth: 540, width: '100%', background: '#fff',
-    borderRadius: 20, overflow: 'hidden',
-    boxShadow: '0 40px 100px rgba(0,0,0,0.35)',
-    border: '1px solid rgba(255,255,255,0.5)',
-  },
-  modalHeader: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '22px 24px',
-    background: 'linear-gradient(135deg,#1e1b4b,#4c1d95)',
-    borderBottom: '1px solid rgba(255,255,255,0.1)',
-  },
-  modalTitle: { color: '#fff', margin: 0, fontSize: 17, fontWeight: '900', letterSpacing: '-0.3px' },
-  modalSub: { color: '#c4b5fd', margin: '3px 0 0', fontSize: 12 },
-  modalCloseBtn: {
-    background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
-    borderRadius: 10, padding: 7, cursor: 'pointer', color: '#fff', display: 'flex',
-    transition: 'background 0.2s',
-  },
-  modalBody: { padding: 24 },
-  typeBtn: (active, cfg) => ({
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-    padding: '12px 8px', borderRadius: 12, cursor: 'pointer',
-    fontWeight: '700', fontSize: 12, transition: 'all 0.15s',
-    border: `2px solid ${active ? cfg.color : '#e2e8f0'}`,
-    background: active ? cfg.bg : '#fff',
-    color: active ? cfg.darkColor : '#64748b',
-    boxShadow: active ? `0 4px 12px ${cfg.glow}` : 'none',
-  }),
-};
-
-/* ─── Avatar ─────────────────────────────────────────── */
-function Avatar({ initials, color, size = 38 }) {
-  return (
-    <div style={S.avatar(color, size)}>
-      {initials}
-    </div>
-  );
-}
-
-/* ─── Type Badge ─────────────────────────────────────── */
-function TypeBadge({ type }) {
-  const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.Question;
-  const Icon = cfg.icon;
-  return (
-    <span style={S.badge(type)}>
-      <Icon size={10} strokeWidth={2.5} /> {cfg.label}
-    </span>
-  );
-}
-
-/* ─── Comment Item ───────────────────────────────────── */
-function CommentItem({ comment, onLike }) {
-  return (
-    <div style={S.commentItem}>
-      <Avatar initials={comment.initials} color={comment.avatarColor} size={30} />
-      <div style={S.commentBody}>
-        <div style={S.commentHeader}>
-          <span style={S.commentAuthor}>{comment.author}</span>
-          <span style={S.commentTime}>{comment.time}</span>
-        </div>
-        <p style={S.commentText}>{comment.text}</p>
-        <button
-          type="button"
-          onClick={onLike}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 4,
-            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-            color: comment.likedByMe ? '#6366f1' : '#94a3b8',
-            fontSize: 11.5, fontWeight: '700', transition: 'color 0.2s',
-          }}
-        >
-          <ThumbsUp size={11} strokeWidth={2} fill={comment.likedByMe ? '#6366f1' : 'none'} />
-          {comment.likes}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Post Card ──────────────────────────────────────── */
+/* ─── Post Card Component ───────────────────────────── */
 function PostCard({ post, onLike, onCommentLike, onAddComment, onSave }) {
   const [expanded, setExpanded] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -605,119 +218,248 @@ function PostCard({ post, onLike, onCommentLike, onAddComment, onSave }) {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   return (
-    <div style={S.card(post.type)}>
-      {/* Author Row */}
-      <div style={S.cardHeader}>
-        <div style={S.authorRow}>
-          <div style={S.authorLeft}>
-            <Avatar initials={post.initials} color={post.avatarColor} size={40} />
-            <div style={S.authorInfo}>
-              <div style={S.authorName}>
-                {post.author}
-                <TypeBadge type={post.type} />
-              </div>
-              <div style={S.authorMeta}>
-                <span style={S.deviceTag}>
-                  <Smartphone size={10} color="#64748b" />
-                  {post.device}
+    <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      {/* Top Header: Author, Type Badge, Device, Time, Save Button */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div
+            style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '10px',
+              background: post.avatarColor || '#2563eb',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: '800',
+              fontSize: '14px',
+              flexShrink: 0,
+            }}
+          >
+            {post.initials}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <strong style={{ fontSize: '14px', color: '#0f172a' }}>{post.author}</strong>
+              {post.type === 'Question' && (
+                <span className="status-badge badge-amber">
+                  <HelpCircle size={11} /> QUESTION
                 </span>
-              </div>
+              )}
+              {post.type === 'Solution' && (
+                <span className="status-badge badge-green">
+                  <CheckCircle2 size={11} /> SOLUTION
+                </span>
+              )}
+              {post.type === 'Tip' && (
+                <span className="status-badge badge-purple">
+                  <Lightbulb size={11} /> TIP
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="status-badge badge-slate" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                <Smartphone size={11} /> {post.device}
+              </span>
             </div>
           </div>
-          <div style={S.authorRight}>
-            <span style={S.timestamp}>{post.createdAt}</span>
-            <button
-              type="button"
-              onClick={() => onSave(post.id)}
-              title={post.saved ? 'Unsave' : 'Save'}
-              style={S.saveBtn(post.saved)}
-            >
-              <Bookmark size={15} fill={post.saved ? '#6366f1' : 'none'} strokeWidth={2} />
-            </button>
-          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Clock size={11} /> {post.createdAt}
+          </span>
+          <button
+            type="button"
+            onClick={() => onSave(post.id)}
+            title={post.saved ? 'Remove from Saved' : 'Save Discussion'}
+            className="btn btn-secondary btn-sm"
+            style={{
+              padding: '6px 8px',
+              color: post.saved ? '#2563eb' : '#94a3b8',
+              background: post.saved ? '#eff6ff' : 'transparent',
+              borderColor: post.saved ? '#bfdbfe' : 'transparent',
+            }}
+          >
+            <Bookmark size={15} fill={post.saved ? '#2563eb' : 'none'} />
+          </button>
         </div>
       </div>
 
-      {/* Title + Body */}
-      <h3 style={S.postTitle}>{post.title}</h3>
-      <p style={S.postBody}>{post.body}</p>
+      {/* Title & Body */}
+      <div>
+        <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: '0 0 6px', lineHeight: 1.4 }}>
+          {post.title}
+        </h3>
+        <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.6, margin: 0 }}>
+          {post.body}
+        </p>
+      </div>
 
-      {/* Action Bar */}
-      <div style={S.actionBar}>
+      {/* Action Footer Bar */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingTop: '12px',
+          borderTop: '1px solid var(--border-color)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => onLike(post.id)}
+            style={{
+              color: post.likedByMe ? '#2563eb' : 'inherit',
+              background: post.likedByMe ? '#eff6ff' : undefined,
+              borderColor: post.likedByMe ? '#bfdbfe' : undefined,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <ThumbsUp size={13} fill={post.likedByMe ? '#2563eb' : 'none'} />
+            <span>{post.likes}</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => {
+              setExpanded((v) => !v);
+              setTimeout(() => inputRef.current?.focus(), 120);
+            }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <MessageCircle size={13} />
+            <span>{post.comments.length} Comments</span>
+            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+        </div>
+
         <button
           type="button"
-          onClick={() => onLike(post.id)}
-          style={S.actionBtn(post.likedByMe, '#6366f1')}
+          className="btn btn-secondary btn-sm"
+          onClick={() => {
+            navigator.clipboard?.writeText(window.location.href);
+            toast.success('Discussion link copied!');
+          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
         >
-          <ThumbsUp
-            size={14}
-            fill={post.likedByMe ? '#6366f1' : 'none'}
-            strokeWidth={post.likedByMe ? 2.5 : 2}
-          />
-          {post.likes}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => { setExpanded(v => !v); setTimeout(() => inputRef.current?.focus(), 120); }}
-          style={S.actionBtn(expanded, '#6366f1')}
-        >
-          <MessageCircle size={14} strokeWidth={2} />
-          {post.comments.length} Comment{post.comments.length !== 1 ? 's' : ''}
-          {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => { navigator.clipboard?.writeText(window.location.href); toast.success('Link copied!'); }}
-          style={S.shareBtn}
-        >
-          <Share2 size={13} strokeWidth={2} /> Share
+          <Share2 size={13} /> Share
         </button>
       </div>
 
-      {/* Comments Panel */}
+      {/* Expandable Comments Drawer */}
       {expanded && (
-        <div style={S.commentsPanel}>
-          {post.comments.length === 0 && (
-            <p style={{ fontSize: 12.5, color: '#94a3b8', textAlign: 'center', padding: '10px 0', margin: 0, fontWeight: '600' }}>
-              No comments yet — be the first! 💬
-            </p>
-          )}
-          {post.comments.map(c => (
-            <CommentItem
-              key={c.id}
-              comment={c}
-              onLike={() => onCommentLike(post.id, c.id)}
-            />
-          ))}
-          <div style={S.commentInput}>
-            <Avatar initials="ME" color="#6366f1" size={28} />
-            <div style={{ flex: 1, display: 'flex', gap: 8 }}>
-              <input
-                ref={inputRef}
-                type="text"
-                className="input-control"
-                placeholder="Write a comment..."
-                value={commentText}
-                onChange={e => setCommentText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                style={{ flex: 1, fontSize: 12.5, padding: '8px 12px', borderRadius: 10 }}
-              />
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={handleSend}
-                disabled={!commentText.trim()}
-                style={{ padding: '8px 13px', borderRadius: 10 }}
-              >
-                <Send size={13} />
-              </button>
+        <div
+          style={{
+            background: 'var(--bg-surface-subtle)',
+            borderRadius: '10px',
+            padding: '14px',
+            marginTop: '4px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+          }}
+        >
+          {post.comments.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '12.5px', padding: '8px 0' }}>
+              No comments yet. Share your technical recommendation!
             </div>
+          ) : (
+            post.comments.map((c) => (
+              <div
+                key={c.id}
+                style={{
+                  background: '#ffffff',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color)',
+                  padding: '10px 12px',
+                  display: 'flex',
+                  gap: '10px',
+                }}
+              >
+                <div
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '6px',
+                    background: c.avatarColor || '#2563eb',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '11px',
+                    fontWeight: '800',
+                    flexShrink: 0,
+                  }}
+                >
+                  {c.initials}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                    <strong style={{ fontSize: '12px', color: '#0f172a' }}>{c.author}</strong>
+                    <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>{c.time}</span>
+                  </div>
+                  <p style={{ fontSize: '12.5px', color: '#475569', margin: '0 0 6px', lineHeight: 1.45 }}>
+                    {c.text}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onCommentLike(post.id, c.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: c.likedByMe ? '#2563eb' : '#94a3b8',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <ThumbsUp size={11} fill={c.likedByMe ? '#2563eb' : 'none'} />
+                    {c.likes > 0 && c.likes}
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+
+          {/* Quick Comment Input */}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+            <input
+              ref={inputRef}
+              type="text"
+              className="input-control"
+              placeholder="Write a solution or comment..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              style={{ height: '36px', fontSize: '12.5px' }}
+            />
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={handleSend}
+              disabled={!commentText.trim()}
+              style={{ height: '36px', padding: '0 14px' }}
+            >
+              <Send size={13} />
+            </button>
           </div>
         </div>
       )}
@@ -725,101 +467,145 @@ function PostCard({ post, onLike, onCommentLike, onAddComment, onSave }) {
   );
 }
 
-/* ─── New Post Modal ─────────────────────────────────── */
+/* ─── New Discussion Modal ──────────────────────────── */
 function NewPostModal({ onClose, onSubmit }) {
   const [form, setForm] = useState({ type: 'Question', device: '', title: '', body: '' });
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.title.trim() || !form.body.trim()) { toast.error('Title and description are required.'); return; }
+    if (!form.title.trim() || !form.body.trim()) {
+      toast.error('Title and description are required.');
+      return;
+    }
     onSubmit(form);
     onClose();
   };
 
   return (
-    <div style={S.modalOverlay}>
-      <div style={S.modalCard}>
-        <div style={S.modalHeader}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(15, 23, 42, 0.7)',
+        backdropFilter: 'blur(4px)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+      }}
+    >
+      <div className="card" style={{ maxWidth: '560px', width: '100%', padding: '0', overflow: 'hidden' }}>
+        <div
+          style={{
+            padding: '18px 24px',
+            borderBottom: '1px solid var(--border-color)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <div>
-            <h3 style={S.modalTitle}>New Community Post</h3>
-            <p style={S.modalSub}>Share your question, solution or pro tip</p>
+            <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
+              Create Community Discussion
+            </h3>
+            <span style={{ fontSize: '12px', color: '#64748b' }}>
+              Share your question, verified fix, or technical advice
+            </span>
           </div>
-          <button type="button" onClick={onClose} style={S.modalCloseBtn}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-secondary btn-sm"
+            style={{ padding: '6px' }}
+          >
             <X size={16} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={S.modalBody}>
-          {/* Type selector */}
-          <div className="form-group" style={{ marginBottom: 16 }}>
-            <label className="form-label" style={{ fontWeight: '700', fontSize: 12, letterSpacing: '0.3px' }}>
-              POST TYPE
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-              {['Question', 'Solution', 'Tip'].map(t => {
-                const cfg = TYPE_CONFIG[t];
-                const Icon = cfg.icon;
-                const active = form.type === t;
+        <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
+          {/* Discussion Type Selector */}
+          <div className="form-group" style={{ marginBottom: '16px' }}>
+            <label className="form-label">DISCUSSION TYPE</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+              {[
+                { type: 'Question', icon: HelpCircle, color: '#f59e0b' },
+                { type: 'Solution', icon: CheckCircle2, color: '#10b981' },
+                { type: 'Tip', icon: Lightbulb, color: '#7c3aed' },
+              ].map(({ type, icon: Icon, color }) => {
+                const active = form.type === type;
                 return (
                   <button
-                    key={t}
+                    key={type}
                     type="button"
-                    onClick={() => set('type', t)}
-                    style={S.typeBtn(active, cfg)}
+                    onClick={() => set('type', type)}
+                    style={{
+                      border: `1.5px solid ${active ? color : 'var(--border-color)'}`,
+                      background: active ? `${color}10` : '#ffffff',
+                      color: active ? color : '#64748b',
+                      fontWeight: active ? '700' : '600',
+                      borderRadius: '10px',
+                      padding: '12px 8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      transition: 'all 0.15s ease',
+                    }}
                   >
-                    <Icon size={20} />
-                    {t}
+                    <Icon size={18} />
+                    <span>{type}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          <div className="form-group" style={{ marginBottom: 14 }}>
-            <label className="form-label">Device / Brand</label>
+          <div className="form-group">
+            <label className="form-label">Target Device / Brand</label>
             <input
               type="text"
               className="input-control"
-              placeholder="e.g. iPhone 13, Samsung S22, Oppo F15..."
+              placeholder="e.g. iPhone 14, Samsung S22, Oppo F15..."
               value={form.device}
-              onChange={e => set('device', e.target.value)}
-              style={{ borderRadius: 10 }}
+              onChange={(e) => set('device', e.target.value)}
             />
           </div>
 
-          <div className="form-group" style={{ marginBottom: 14 }}>
-            <label className="form-label">Title *</label>
+          <div className="form-group">
+            <label className="form-label">Discussion Title *</label>
             <input
               type="text"
               className="input-control"
-              placeholder="Describe your question or tip in one line..."
+              placeholder="Summary of the issue or technique..."
               value={form.title}
-              onChange={e => set('title', e.target.value)}
+              onChange={(e) => set('title', e.target.value)}
               required
-              style={{ borderRadius: 10 }}
             />
           </div>
 
-          <div className="form-group" style={{ marginBottom: 22 }}>
-            <label className="form-label">Details *</label>
+          <div className="form-group" style={{ marginBottom: '22px' }}>
+            <label className="form-label">Technical Details *</label>
             <textarea
               className="input-control"
-              placeholder="Provide more context, steps you tried, error details, etc..."
+              placeholder="Describe symptoms, diagnostic findings, or step-by-step fix..."
               rows={4}
               value={form.body}
-              onChange={e => set('body', e.target.value)}
-              style={{ resize: 'vertical', fontFamily: 'inherit', borderRadius: 10 }}
+              onChange={(e) => set('body', e.target.value)}
+              style={{ resize: 'vertical', fontFamily: 'inherit' }}
               required
             />
           </div>
 
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose} style={{ borderRadius: 10 }}>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" style={{ gap: 7, borderRadius: 10 }}>
-              <Send size={14} /> Post to Community
+            <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Send size={14} /> Publish Discussion
             </button>
           </div>
         </form>
@@ -828,88 +614,235 @@ function NewPostModal({ onClose, onSubmit }) {
   );
 }
 
-/* ─── Community Sidebar ──────────────────────────────── */
+/* ─── Community Sidebar Component ───────────────────── */
 function CommunitySidebar({ posts }) {
   const topContributors = [
     { name: 'Mobile Care Workshop', initials: 'MC', color: '#10b981', posts: 24, rank: 1 },
-    { name: 'Tech Repair Hub',      initials: 'TR', color: '#f59e0b', posts: 18, rank: 2 },
-    { name: 'ProTech Service Hub',  initials: 'PT', color: '#ec4899', posts: 15, rank: 3 },
-    { name: 'QuickFix Labs',        initials: 'QL', color: '#8b5cf6', posts: 11, rank: 4 },
-    { name: 'Galaxy Fix Centre',    initials: 'GF', color: '#3b82f6', posts:  9, rank: 5 },
+    { name: 'Tech Repair Hub', initials: 'TR', color: '#f59e0b', posts: 18, rank: 2 },
+    { name: 'ProTech Service Hub', initials: 'PT', color: '#ec4899', posts: 15, rank: 3 },
+    { name: 'QuickFix Labs', initials: 'QL', color: '#7c3aed', posts: 11, rank: 4 },
+    { name: 'Galaxy Fix Centre', initials: 'GF', color: '#2563eb', posts: 9, rank: 5 },
   ];
 
   const trendingDevices = [
-    { device: 'iPhone 13 / 14', count: 36 },
-    { device: 'Samsung S22 Series', count: 27 },
+    { device: 'iPhone 13 / 14 Series', count: 36 },
+    { device: 'Samsung Galaxy S22 / S23', count: 27 },
     { device: 'Oppo F Series', count: 19 },
-    { device: 'Redmi Note 12', count: 14 },
-    { device: 'Vivo Y Series', count: 11 },
+    { device: 'Redmi Note 12 / 13', count: 14 },
+    { device: 'Vivo Y / V Series', count: 11 },
   ];
 
   const stats = [
-    { label: 'Posts',    value: '12.6K', color: '#6366f1' },
-    { label: 'Members',  value: '1.4K',  color: '#10b981' },
-    { label: 'Solutions',value: '60',    color: '#3b82f6' },
-    { label: 'Tips',     value: '66',    color: '#f59e0b' },
+    { label: 'Discussions', value: '12.6K', color: '#2563eb' },
+    { label: 'Technicians', value: '1.4K', color: '#10b981' },
+    { label: 'Solutions', value: '60', color: '#0284c7' },
+    { label: 'Pro Tips', value: '66', color: '#f59e0b' },
   ];
 
   return (
-    <div style={S.sidebar}>
-      {/* Community Stats */}
-      <div style={S.sideCard}>
-        <div style={S.sideCardHeader}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <BarChart2 size={16} color="#fff" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Community Stats Card */}
+      <div className="card" style={{ padding: '18px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              background: 'var(--primary-light)',
+              color: 'var(--primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <BarChart2 size={16} />
           </div>
-          <span style={S.sideCardTitle}>Community Stats</span>
+          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+            Network Intelligence
+          </h3>
         </div>
-        <div style={S.statGrid}>
-          {stats.map(s => (
-            <div key={s.label} style={S.statCell(s.color)}>
-              <div style={S.statValue(s.color)}>{s.value}</div>
-              <div style={S.statLabel}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Top Contributors */}
-      <div style={S.sideCard}>
-        <div style={S.sideCardHeader}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg,#f59e0b,#d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Award size={16} color="#fff" />
-          </div>
-          <span style={S.sideCardTitle}>Top Contributors</span>
-        </div>
-        <div>
-          {topContributors.map(c => (
-            <div key={c.name} style={S.contributorRow}>
-              <div style={S.rankBadge(c.rank)}>{c.rank}</div>
-              <Avatar initials={c.initials} color={c.color} size={30} />
-              <div style={S.contributorInfo}>
-                <div style={S.contributorName}>{c.name}</div>
-                <div style={S.contributorSub}>{c.posts} posts</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          {stats.map((s) => (
+            <div
+              key={s.label}
+              style={{
+                background: 'var(--bg-surface-subtle)',
+                borderRadius: '10px',
+                padding: '12px 10px',
+                textAlign: 'center',
+                border: '1px solid var(--border-color)',
+              }}
+            >
+              <div style={{ fontSize: '20px', fontWeight: '800', color: s.color, lineHeight: 1.1 }}>
+                {s.value}
+              </div>
+              <div style={{ fontSize: '10.5px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginTop: '3px' }}>
+                {s.label}
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Trending Devices */}
-      <div style={S.sideCard}>
-        <div style={S.sideCardHeader}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg,#ef4444,#dc2626)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Flame size={16} color="#fff" />
+      {/* Top Contributors Card */}
+      <div className="card" style={{ padding: '18px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              background: '#fffbeb',
+              color: '#d97706',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Award size={16} />
           </div>
-          <span style={S.sideCardTitle}>Trending Devices</span>
+          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+            Top Technicians
+          </h3>
         </div>
-        <div>
-          {trendingDevices.map((d, i) => (
-            <div key={d.device} style={{ ...S.trendRow, borderBottom: i < trendingDevices.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-              <span style={S.trendName}>{d.device}</span>
-              <span style={S.trendCount}>{d.count}</span>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {topContributors.map((c) => (
+            <div key={c.name} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div
+                style={{
+                  width: '22px',
+                  height: '22px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: '800',
+                  flexShrink: 0,
+                  background:
+                    c.rank === 1
+                      ? '#fef3c7'
+                      : c.rank === 2
+                      ? '#f1f5f9'
+                      : c.rank === 3
+                      ? '#ffedd5'
+                      : '#f8fafc',
+                  color:
+                    c.rank === 1
+                      ? '#b45309'
+                      : c.rank === 2
+                      ? '#475569'
+                      : c.rank === 3
+                      ? '#c2410c'
+                      : '#64748b',
+                  border:
+                    c.rank === 1
+                      ? '1px solid #fde68a'
+                      : c.rank === 2
+                      ? '1px solid #cbd5e1'
+                      : c.rank === 3
+                      ? '1px solid #fed7aa'
+                      : '1px solid var(--border-color)',
+                }}
+              >
+                {c.rank}
+              </div>
+              <div
+                style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '8px',
+                  background: c.color,
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: '800',
+                  flexShrink: 0,
+                }}
+              >
+                {c.initials}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {c.name}
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b' }}>{c.posts} answers</div>
+              </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Trending Devices Card */}
+      <div className="card" style={{ padding: '18px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              background: '#fef2f2',
+              color: '#dc2626',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Flame size={16} />
+          </div>
+          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+            Trending Hardware
+          </h3>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {trendingDevices.map((d, idx) => (
+            <div
+              key={d.device}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 0',
+                borderBottom: idx < trendingDevices.length - 1 ? '1px solid var(--border-color)' : 'none',
+              }}
+            >
+              <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#334155' }}>
+                {d.device}
+              </span>
+              <span className="status-badge badge-blue" style={{ fontSize: '10.5px' }}>
+                {d.count} topics
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Technician Pro Tip Card */}
+      <div
+        className="card"
+        style={{
+          padding: '16px',
+          background: '#eff6ff',
+          border: '1px solid #bfdbfe',
+          display: 'flex',
+          gap: '12px',
+          alignItems: 'flex-start',
+        }}
+      >
+        <Sparkles size={18} style={{ color: '#2563eb', flexShrink: 0, marginTop: '2px' }} />
+        <div>
+          <strong style={{ fontSize: '12px', color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
+            Technician Pro Tip
+          </strong>
+          <p style={{ fontSize: '12px', color: '#334155', margin: 0, lineHeight: 1.5 }}>
+            Include exact model, board version, and multimeter diagnostic measurements in your post for faster peer verification!
+          </p>
         </div>
       </div>
     </div>
@@ -925,7 +858,7 @@ export const CommunityPage = () => {
   const [nextCommentId, setNextCommentId] = useState(700);
   const [nextPostId, setNextPostId] = useState(10);
 
-  const filteredPosts = posts.filter(p => {
+  const filteredPosts = posts.filter((p) => {
     const matchesFilter =
       activeFilter === 'All' ||
       (activeFilter === 'Questions' && p.type === 'Question') ||
@@ -944,31 +877,35 @@ export const CommunityPage = () => {
   });
 
   const handleLike = (postId) => {
-    setPosts(prev => prev.map(p =>
-      p.id === postId
-        ? { ...p, likedByMe: !p.likedByMe, likes: p.likedByMe ? p.likes - 1 : p.likes + 1 }
-        : p
-    ));
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? { ...p, likedByMe: !p.likedByMe, likes: p.likedByMe ? p.likes - 1 : p.likes + 1 }
+          : p
+      )
+    );
   };
 
   const handleSave = (postId) => {
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p));
-    const post = posts.find(p => p.id === postId);
-    if (post) toast.success(post.saved ? 'Removed from saved' : 'Post saved! 🔖');
+    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, saved: !p.saved } : p)));
+    const post = posts.find((p) => p.id === postId);
+    if (post) toast.success(post.saved ? 'Removed from saved' : 'Discussion saved to your bookmarks! 🔖');
   };
 
   const handleCommentLike = (postId, commentId) => {
-    setPosts(prev => prev.map(p => {
-      if (p.id !== postId) return p;
-      return {
-        ...p,
-        comments: p.comments.map(c =>
-          c.id === commentId
-            ? { ...c, likedByMe: !c.likedByMe, likes: c.likedByMe ? c.likes - 1 : c.likes + 1 }
-            : c
-        ),
-      };
-    }));
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        return {
+          ...p,
+          comments: p.comments.map((c) =>
+            c.id === commentId
+              ? { ...c, likedByMe: !c.likedByMe, likes: c.likedByMe ? c.likes - 1 : c.likes + 1 }
+              : c
+          ),
+        };
+      })
+    );
   };
 
   const { user, currentShop } = useAuth();
@@ -980,28 +917,28 @@ export const CommunityPage = () => {
       id: nextCommentId,
       author: activeAuthor,
       initials: activeInitials,
-      avatarColor: '#6366f1',
+      avatarColor: '#2563eb',
       text,
       likes: 0,
       likedByMe: false,
       time: 'just now',
     };
-    setNextCommentId(n => n + 1);
-    setPosts(prev => prev.map(p =>
-      p.id === postId ? { ...p, comments: [...p.comments, newComment] } : p
-    ));
-    toast.success('Comment posted!');
+    setNextCommentId((n) => n + 1);
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, comments: [...p.comments, newComment] } : p))
+    );
+    toast.success('Your reply has been posted!');
   };
 
   const handleNewPost = (form) => {
-    const COLORS = ['#6366f1', '#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
+    const COLORS = ['#2563eb', '#10b981', '#7c3aed', '#f59e0b', '#0284c7', '#ea580c'];
     const newPost = {
       id: nextPostId,
       type: form.type,
       author: activeAuthor,
       initials: activeInitials,
       avatarColor: COLORS[nextPostId % COLORS.length],
-      device: form.device.trim() || 'General',
+      device: form.device.trim() || 'General Device',
       title: form.title.trim(),
       body: form.body.trim(),
       likes: 0,
@@ -1010,90 +947,203 @@ export const CommunityPage = () => {
       createdAt: 'just now',
       comments: [],
     };
-    setNextPostId(n => n + 1);
-    setPosts(prev => [newPost, ...prev]);
-    toast.success('Your post is live in the community! 🎉');
+    setNextPostId((n) => n + 1);
+    setPosts((prev) => [newPost, ...prev]);
+    toast.success('Your discussion is live in the community! 🎉');
   };
 
   return (
-    <MainLayout title="Repair Community" subtitle="Zapate · Knowledge Hub">
-      {/* Hero Banner */}
-      <div style={S.hero}>
-        <div style={S.heroBg1} />
-        <div style={S.heroBg2} />
-        <div style={S.heroContent}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
-              <div style={S.heroIconWrap}>
-                <Users size={22} color="#fff" />
-              </div>
-              <h1 style={S.heroTitle}>ZAPATE Repair Community</h1>
-            </div>
-            <p style={S.heroSubtitle}>
-              Ask questions &nbsp;·&nbsp; Share solutions &nbsp;·&nbsp; Learn from fellow technicians
-            </p>
-            <div style={S.heroDots}>
-              {['#f59e0b', '#10b981', '#8b5cf6', '#ef4444'].map(c => (
-                <div key={c} style={S.heroDot(c)} />
-              ))}
-            </div>
+    <MainLayout title="Repair Community" subtitle="Engineer Network & Knowledge Base">
+      {/* 1. Page Header matching all modules */}
+      <div className="page-header">
+        <div className="page-header-info">
+          <div className="page-badge-eyebrow">
+            <span /> KNOWLEDGE HUB & TECHNICAL NETWORK
           </div>
-          <button
-            type="button"
-            style={S.heroBtn}
-            onClick={() => setIsNewPostOpen(true)}
-          >
-            <Plus size={17} strokeWidth={2.5} />
-            New Post
-          </button>
+          <h1>Repair Community</h1>
+          <p>Ask technical questions, share verified hardware solutions, and collaborate with fellow workshop engineers.</p>
         </div>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => setIsNewPostOpen(true)}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <Plus size={16} /> New Discussion
+        </button>
       </div>
 
-      {/* Toolbar */}
-      <div style={S.toolbar}>
-        <div style={S.searchWrap}>
-          <Search size={15} style={S.searchIcon} />
-          <input
-            type="text"
-            style={S.searchInput}
-            placeholder="Search repair problem or device..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div style={S.filterGroup}>
-          {FILTERS.map(f => (
+      {/* 2. Standard KPI Cards matching all modules */}
+      <KpiCards
+        columns={4}
+        items={[
+          {
+            icon: <MessageCircle size={22} />,
+            label: 'Total Discussions',
+            value: posts.length,
+            color: 'blue',
+            accent: true,
+            delta: 'Active',
+            deltaColor: '#2563eb',
+            sub: 'Community repair threads',
+            onClick: () => setActiveFilter('All'),
+          },
+          {
+            icon: <CheckCircle2 size={22} />,
+            label: 'Verified Solutions',
+            value: posts.filter((p) => p.type === 'Solution').length,
+            color: 'emerald',
+            accent: true,
+            delta: 'Solved',
+            deltaColor: '#059669',
+            sub: 'Tested hardware fixes',
+            onClick: () => setActiveFilter('Solutions'),
+          },
+          {
+            icon: <HelpCircle size={22} />,
+            label: 'Open Questions',
+            value: posts.filter((p) => p.type === 'Question').length,
+            color: 'amber',
+            accent: true,
+            delta: 'Troubleshooting',
+            deltaColor: '#d97706',
+            sub: 'Pending technician input',
+            onClick: () => setActiveFilter('Questions'),
+          },
+          {
+            icon: <Lightbulb size={22} />,
+            label: 'Pro Bench Tips',
+            value: posts.filter((p) => p.type === 'Tip').length,
+            color: 'purple',
+            accent: true,
+            delta: 'Pro Guides',
+            deltaColor: '#7c3aed',
+            sub: 'Technician repair guides',
+            onClick: () => setActiveFilter('Tips'),
+          },
+        ]}
+      />
+
+      {/* 3. Toolbar & Filters Card matching RepairBoardPage & CustomerListPage */}
+      <div className="card" style={{ marginBottom: '20px', padding: '16px 20px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '16px',
+          }}
+        >
+          <div className="status-filters">
             <button
-              key={f}
               type="button"
-              style={S.filterBtn(activeFilter === f)}
-              onClick={() => setActiveFilter(f)}
+              className={activeFilter === 'All' ? 'selected' : ''}
+              onClick={() => setActiveFilter('All')}
             >
-              {f}
+              All Topics ({posts.length})
             </button>
-          ))}
+            <button
+              type="button"
+              className={activeFilter === 'Questions' ? 'selected' : ''}
+              onClick={() => setActiveFilter('Questions')}
+            >
+              Questions ({posts.filter((p) => p.type === 'Question').length})
+            </button>
+            <button
+              type="button"
+              className={activeFilter === 'Solutions' ? 'selected' : ''}
+              onClick={() => setActiveFilter('Solutions')}
+            >
+              Solutions ({posts.filter((p) => p.type === 'Solution').length})
+            </button>
+            <button
+              type="button"
+              className={activeFilter === 'Tips' ? 'selected' : ''}
+              onClick={() => setActiveFilter('Tips')}
+            >
+              Pro Tips ({posts.filter((p) => p.type === 'Tip').length})
+            </button>
+          </div>
+
+          <div className="input-wrapper" style={{ width: '300px' }}>
+            <span className="input-icon">
+              <Search size={15} />
+            </span>
+            <input
+              type="text"
+              className="input-control input-with-icon"
+              placeholder="Search topics, problems, devices..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  border: 'none',
+                  background: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Two-column grid */}
-      <div style={S.grid}>
-        {/* Feed */}
-        <div style={S.feed}>
+      {/* 4. Two-Column Layout (Discussions Feed + Sticky Sidebar) */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 340px',
+          gap: '20px',
+          alignItems: 'start',
+        }}
+      >
+        {/* Left Column: Discussions Feed */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {filteredPosts.length === 0 ? (
-            <div style={S.empty}>
-              <MessageCircle size={44} color="#cbd5e1" style={{ marginBottom: 14 }} />
-              <h3 style={{ color: '#94a3b8', margin: '0 0 6px', fontWeight: '800', fontSize: 16 }}>
-                No posts found
+            <div className="card" style={{ textAlign: 'center', padding: '64px 20px' }}>
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '16px',
+                  background: '#eff6ff',
+                  color: '#2563eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px',
+                }}
+              >
+                <MessageCircle size={28} />
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
+                No discussions found
               </h3>
-              <p style={{ color: '#cbd5e1', fontSize: 13, margin: '0 0 18px' }}>
-                {searchQuery ? `No results for "${searchQuery}"` : 'Be the first to post!'}
+              <p style={{ fontSize: '14px', color: '#64748b', maxWidth: '420px', margin: '0 auto 20px', lineHeight: 1.5 }}>
+                {searchQuery
+                  ? `No discussions matching "${searchQuery}". Try different keywords or reset search.`
+                  : 'Be the first technician to start a community discussion!'}
               </p>
-              <button className="btn btn-primary" type="button" onClick={() => setIsNewPostOpen(true)} style={{ borderRadius: 10 }}>
-                <Plus size={14} /> Create Post
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setIsNewPostOpen(true)}
+              >
+                <Plus size={16} /> New Discussion
               </button>
             </div>
           ) : (
-            filteredPosts.map(post => (
+            filteredPosts.map((post) => (
               <PostCard
                 key={post.id}
                 post={post}
@@ -1106,13 +1156,13 @@ export const CommunityPage = () => {
           )}
         </div>
 
-        {/* Sidebar */}
-        <div style={{ position: 'sticky', top: 20 }}>
+        {/* Right Column: Sidebar Cards */}
+        <div style={{ position: 'sticky', top: '20px' }}>
           <CommunitySidebar posts={posts} />
         </div>
       </div>
 
-      {/* New Post Modal */}
+      {/* 5. New Discussion Modal */}
       {isNewPostOpen && (
         <NewPostModal onClose={() => setIsNewPostOpen(false)} onSubmit={handleNewPost} />
       )}

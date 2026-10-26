@@ -1,14 +1,21 @@
 import { Shop } from '../shops/shop.model.js';
 import { Settings } from './settings.model.js';
 import { auditLogService } from '../admin/auditLog.service.js';
+import { subscriptionService } from '../shops/subscription.service.js';
 
 export class SettingsService {
   async get(shopId = null) {
     if (shopId) {
       const shop = await Shop.findById(shopId);
       if (shop) {
+        const now = new Date();
+        const liveStatus = subscriptionService.calculateStatus(shop, now);
         return {
           ...shop.toObject(),
+          daysRemaining: subscriptionService.getDaysRemaining(shop, now),
+          calculatedStatus: liveStatus,
+          subscriptionStatus: liveStatus,
+          serverTime: now,
           shopName: shop.name,
           phone: shop.shopContactNumber || shop.ownerMobile,
           email: shop.businessEmail || shop.ownerEmail,

@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard,
   Users,
   Wrench,
-  Cpu,
   ShieldCheck,
   Receipt,
   CreditCard,
@@ -14,34 +13,20 @@ import {
   User,
   LogOut,
   MessagesSquare,
+  ChevronsUpDown,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useApp } from '../../context/AppContext.jsx';
-import api from '../../services/api.js';
 
 export const ClientSidebar = () => {
   const [location] = useLocation();
   const { logout, user } = useAuth();
   const { isModuleEnabled, isMobileSidebarOpen, setIsMobileSidebarOpen } = useApp();
-  const [activeRepairsCount, setActiveRepairsCount] = useState(0);
-
-  useEffect(() => {
-    // Load live repair job count from MongoDB
-    api.get('/reports/dashboard')
-      .then((data) => {
-        if (data && typeof data.activeRepairs === 'number') {
-          setActiveRepairsCount(data.activeRepairs);
-        } else if (data && typeof data.pendingRepairs === 'number') {
-          setActiveRepairsCount(data.pendingRepairs);
-        }
-      })
-      .catch(() => {});
-  }, [location]);
 
   const allNavItems = [
     { label: 'Dashboard', path: '/dashboard', moduleKey: 'dashboard', icon: LayoutDashboard },
     { label: 'Customers CRM', path: '/customers', moduleKey: 'customers', icon: Users },
-    { label: 'Repair Jobs', path: '/repairs', moduleKey: 'repairs', icon: Wrench, badge: activeRepairsCount > 0 ? String(activeRepairsCount) : null },
+    { label: 'Repair Jobs', path: '/repairs', moduleKey: 'repairs', icon: Wrench },
     { label: 'Warranty Management', path: '/warranties', moduleKey: 'warranties', icon: ShieldCheck },
     { label: 'Quick Sales', path: '/pos', moduleKey: 'pos', icon: Receipt },
     { label: 'Payments & Due', path: '/payments', moduleKey: 'payments', icon: CreditCard },
@@ -53,13 +38,9 @@ export const ClientSidebar = () => {
   ];
 
   const visibleNavItems = allNavItems.filter((item) => {
-    if (
-      item.moduleKey === 'dashboard' ||
-      item.moduleKey === 'profile' ||
-      item.moduleKey === 'community' ||
-      item.moduleKey === 'warranties'
-    )
+    if (item.moduleKey === 'dashboard' || item.moduleKey === 'profile') {
       return true;
+    }
     return isModuleEnabled(item.moduleKey);
   });
 
@@ -79,14 +60,18 @@ export const ClientSidebar = () => {
       </div>
 
       {/* Workshop Switcher Badge */}
-      <div className="shop-switcher">
+      <div className="shop-switcher" title="Active Workshop Station">
         <div className="shop-avatar">
           {user?.shopName ? user.shopName.charAt(0).toUpperCase() : 'W'}
         </div>
         <div className="shop-details">
-          <strong>{user?.shopName || (user?.role === 'SUPER_ADMIN' ? 'Platform Control' : 'Shop Setup Required')}</strong>
-          <span>{user?.name || (user?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Shop Owner')}</span>
+          <div className="shop-name-row">
+            <strong>{user?.shopName || (user?.role === 'SUPER_ADMIN' ? 'Platform Control' : 'Shop Setup Required')}</strong>
+            <span className="shop-status-dot" title="Active Station" />
+          </div>
+          <span>{user?.role === 'SUPER_ADMIN' ? 'Super Admin' : `Owner • ${user?.name || 'Technician'}`}</span>
         </div>
+        <ChevronsUpDown size={14} className="shop-switcher-chevron" />
       </div>
 
       {/* Navigation Links */}
@@ -104,7 +89,6 @@ export const ClientSidebar = () => {
               >
                 <Icon size={16} />
                 <span>{item.label}</span>
-                {item.badge && <span className="nav-badge">{item.badge}</span>}
               </button>
             </Link>
           );

@@ -11,7 +11,7 @@ export function requireModule(moduleName) {
       return next();
     }
 
-    const shopId = req.user.shopId;
+    const shopId = req.user.shopId || req.shopId;
     if (!shopId) {
       return next();
     }
@@ -27,19 +27,39 @@ export function requireModule(moduleName) {
         return res.status(403).json({ success: false, message: 'Shop workspace is inactive or suspended by Admin' });
       }
 
-      if (shop.enabledModules && Array.isArray(shop.enabledModules)) {
-        if (!shop.enabledModules.includes(moduleName)) {
-          return res.status(403).json({
-            success: false,
-            message: `The '${moduleName}' module is currently disabled for your shop by Platform Admin.`,
-          });
-        }
+      const defaultModules = [
+        'customers',
+        'repairs',
+        'devices',
+        'technicians',
+        'pos',
+        'payments',
+        'inventory',
+        'suppliers',
+        'purchases',
+        'used-mobiles',
+        'reports',
+        'settings',
+        'users',
+        'warranties',
+        'community',
+        'notifications',
+      ];
+
+      const enabledModules = Array.isArray(shop.enabledModules) ? shop.enabledModules : defaultModules;
+      if (!enabledModules.includes(moduleName)) {
+        return res.status(403).json({
+          success: false,
+          message: `The '${moduleName}' module is currently disabled for your shop by Platform Admin.`,
+          module: moduleName,
+          disabled: true,
+        });
       }
 
       req.shop = shop;
       next();
     } catch (err) {
-      next();
+      next(err);
     }
   };
 }

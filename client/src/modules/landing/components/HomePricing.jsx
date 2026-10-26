@@ -1,82 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import {
   Check,
   Zap,
   Sparkles,
   ShieldCheck,
-  Store,
-  Layers,
   ArrowRight,
-  HelpCircle
 } from 'lucide-react';
-
-const PLANS = [
-  {
-    id: 'starter',
-    name: 'Starter Workbench',
-    badge: 'Single Tech / Boutique',
-    monthlyPrice: 999,
-    annualPrice: 799,
-    description: 'Perfect for independent repair specialists and single-counter mobile service shops.',
-    features: [
-      '1 Workshop Location',
-      'Up to 2 User Seats (Owner + Tech)',
-      'Up to 150 Repair Jobs / month',
-      'Digital Job Intake & Barcode Printing',
-      'Express POS Billing & Thermal Receipts',
-      'Parts Inventory Shelf Tracking',
-      'Customer Directory & History',
-      'Standard Email & Community Support',
-    ],
-    popular: false,
-    cta: 'Start Free Starter Trial',
-  },
-  {
-    id: 'pro',
-    name: 'Pro Workshop OS',
-    badge: 'Most Popular for Busy Centers',
-    monthlyPrice: 2499,
-    annualPrice: 1999,
-    description: 'The complete powerhouse for multi-technician repair centers and high-volume operations.',
-    features: [
-      'Up to 2 Workshop Locations',
-      'Up to 8 User Seats (Cashiers + Master Techs)',
-      'Unlimited Repair Jobs & POS Invoices',
-      'Kanban Repair Board & Status Timers',
-      'Smart Parts Inventory & Low-Stock Alerts',
-      'Automated WhatsApp & SMS Notifications',
-      'Refurbished & Used Mobile Hub',
-      'Financial Profit Pulse & Cash Drawer Reports',
-      'Priority 24/7 WhatsApp & Phone Support',
-    ],
-    popular: true,
-    cta: 'Start 14-Day Free Pro Trial',
-  },
-  {
-    id: 'enterprise',
-    name: 'Franchise Enterprise',
-    badge: 'Multi-Location Chains',
-    monthlyPrice: 5999,
-    annualPrice: 4799,
-    description: 'Built for repair chains, authorized franchise networks, and enterprise service centers.',
-    features: [
-      'Unlimited Workshop Locations',
-      'Unlimited User Seats & Granular Roles',
-      'Centralized Franchise Intelligence Dashboard',
-      'Inter-Branch Inventory Transfers & Stock Pooling',
-      'Custom Branded Thermal Receipt Layouts',
-      'Dedicated Migration Manager & Staff Training',
-      'Custom ERP/Accounting Webhooks & REST API',
-      'Enterprise 99.99% SLA & Dedicated Account Manager',
-    ],
-    popular: false,
-    cta: 'Deploy Enterprise Suite',
-  },
-];
+import api from '../../../services/api.js';
 
 export const HomePricing = () => {
   const [billingCycle, setBillingCycle] = useState('annual'); // 'monthly' or 'annual'
+  const [plans, setPlans] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    api.get('/plans')
+      .then((data) => {
+        if (isMounted && Array.isArray(data)) {
+          setPlans(data);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setPlans([]);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <section id="pricing" className="home-pricing-section">
@@ -115,64 +72,105 @@ export const HomePricing = () => {
         </div>
 
         {/* Pricing Cards Grid */}
-        <div className="pricing-cards-grid">
-          {PLANS.map((plan) => {
-            const price = billingCycle === 'annual' ? plan.annualPrice : plan.monthlyPrice;
-
-            return (
+        {isLoading ? (
+          <div className="pricing-cards-grid">
+            {[1, 2, 3].map((n) => (
               <div
-                key={plan.id}
-                className={`pricing-card ${plan.popular ? 'pricing-card-popular' : ''}`}
+                key={n}
+                className="pricing-card"
+                style={{
+                  minHeight: '400px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: 0.6,
+                }}
               >
-                {plan.popular && (
-                  <div className="popular-ribbon">
-                    <Zap size={13} />
-                    <span>RECOMMENDED BY 80% OF WORKSHOPS</span>
-                  </div>
-                )}
-
-                <div className="pricing-card-header">
-                  <span className="plan-badge-pill">{plan.badge}</span>
-                  <h3 className="plan-name">{plan.name}</h3>
-                  <p className="plan-desc">{plan.description}</p>
-                </div>
-
-                <div className="pricing-price-box">
-                  <div className="price-row">
-                    <span className="currency font-mono">₹</span>
-                    <span className="amount font-mono">{price.toLocaleString('en-IN')}</span>
-                    <span className="period">/ month</span>
-                  </div>
-                  <span className="billing-subtext">
-                    {billingCycle === 'annual' ? 'Billed annually (tax inclusive)' : 'Billed monthly'}
-                  </span>
-                </div>
-
-                <Link
-                  href={`/register?plan=${plan.id}`}
-                  className={`btn btn-full ${
-                    plan.popular ? 'btn-primary btn-lg' : 'btn-outline'
-                  } pricing-cta-btn`}
-                >
-                  <span>{plan.cta}</span>
-                  <ArrowRight size={16} />
-                </Link>
-
-                <div className="pricing-features-divider" />
-
-                <div className="pricing-features-list">
-                  <span className="features-list-title">Everything included:</span>
-                  {plan.features.map((feat, idx) => (
-                    <div key={idx} className="plan-feature-item">
-                      <Check size={16} className="text-emerald-500 flex-shrink-0" />
-                      <span>{feat}</span>
-                    </div>
-                  ))}
-                </div>
+                <span>Loading plans...</span>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        ) : plans.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+            <p>Custom workshop plans are currently being configured. Click below to sign up.</p>
+            <Link href="/register" className="btn btn-primary">
+              <span>Register Workshop</span>
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        ) : (
+          <div className="pricing-cards-grid">
+            {plans.map((plan) => {
+              const monthly = Number(plan.price) || 0;
+              const annual = plan.yearlyPrice > 0 ? Number(plan.yearlyPrice) : Math.round(monthly * 0.8);
+              const price = billingCycle === 'annual' ? annual : monthly;
+              const isPopular = Boolean(plan.isPopular);
+              const staffLimit = plan.limitUsers === -1 || plan.limitUsers === 'Unlimited' ? 'Unlimited' : `Up to ${plan.limitUsers}`;
+              const techLimit = plan.limitTechs === -1 || plan.limitTechs === 'Unlimited' ? 'Unlimited' : `Up to ${plan.limitTechs}`;
+
+              return (
+                <div
+                  key={plan._id || plan.name}
+                  className={`pricing-card ${isPopular ? 'pricing-card-popular' : ''}`}
+                >
+                  {isPopular && (
+                    <div className="popular-ribbon">
+                      <Zap size={13} />
+                      <span>RECOMMENDED BY 80% OF WORKSHOPS</span>
+                    </div>
+                  )}
+
+                  <div className="pricing-card-header">
+                    <span className="plan-badge-pill">{plan.badge || (isPopular ? 'Most Popular' : 'Workshop Tier')}</span>
+                    <h3 className="plan-name">{plan.name}</h3>
+                    <p className="plan-desc">{plan.description || 'Full workshop management tools and thermal POS billing.'}</p>
+                  </div>
+
+                  <div className="pricing-price-box">
+                    <div className="price-row">
+                      <span className="currency font-mono">₹</span>
+                      <span className="amount font-mono">{price.toLocaleString('en-IN')}</span>
+                      <span className="period">/ month</span>
+                    </div>
+                    <span className="billing-subtext">
+                      {billingCycle === 'annual' ? 'Billed annually (tax inclusive)' : 'Billed monthly'}
+                    </span>
+                  </div>
+
+                  <Link
+                    href={`/register?plan=${encodeURIComponent(plan.name)}`}
+                    className={`btn btn-full ${
+                      isPopular ? 'btn-primary btn-lg' : 'btn-outline'
+                    } pricing-cta-btn`}
+                  >
+                    <span>Start 14-Day Free Trial</span>
+                    <ArrowRight size={16} />
+                  </Link>
+
+                  <div className="pricing-features-divider" />
+
+                  <div className="pricing-features-list">
+                    <span className="features-list-title">Everything included:</span>
+                    <div className="plan-feature-item">
+                      <Check size={16} className="text-emerald-500 flex-shrink-0" />
+                      <span>{staffLimit} Staff Accounts</span>
+                    </div>
+                    <div className="plan-feature-item">
+                      <Check size={16} className="text-emerald-500 flex-shrink-0" />
+                      <span>{techLimit} Technician Seats</span>
+                    </div>
+                    {(Array.isArray(plan.features) ? plan.features : []).map((feat, idx) => (
+                      <div key={idx} className="plan-feature-item">
+                        <Check size={16} className="text-emerald-500 flex-shrink-0" />
+                        <span>{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Guarantee Banner */}
         <div className="pricing-guarantee-box">

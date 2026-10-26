@@ -6,7 +6,7 @@ const reportService = new ReportService();
 export class ReportController {
   async getDashboardStats(req, res, next) {
     try {
-      const stats = await reportService.getDashboardStats(req.shopId, req.role);
+      const stats = await reportService.getDashboardStats(req.shopId, req.role, req.query);
       return sendSuccess(res, stats);
     } catch (err) {
       next(err);
@@ -25,7 +25,8 @@ export class ReportController {
 
   async getAnalytics(req, res, next) {
     try {
-      const analytics = await reportService.getAnalytics(req.shopId);
+      const { range } = req.query;
+      const analytics = await reportService.getAnalytics(req.shopId, range);
       return sendSuccess(res, analytics);
     } catch (err) {
       next(err);

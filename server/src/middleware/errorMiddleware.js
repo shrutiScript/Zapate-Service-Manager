@@ -15,6 +15,13 @@ export function errorMiddleware(err, req, res, next) {
     isDuplicate: err.isDuplicate || undefined,
     duplicateField: err.duplicateField || undefined,
     existingValue: err.existingValue || undefined,
+    isBlocked: err.isBlocked !== undefined ? err.isBlocked : undefined,
+    isExpired: err.isExpired !== undefined ? err.isExpired : undefined,
+    subscriptionExpired: err.subscriptionExpired !== undefined ? err.subscriptionExpired : undefined,
+    shopId: err.shopId || undefined,
+    shopName: err.shopName || undefined,
+    plan: err.plan || undefined,
+    expiresAt: err.expiresAt || undefined,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 }

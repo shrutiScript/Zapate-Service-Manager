@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MainLayout } from '../../../components/layout/MainLayout.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { toast } from 'sonner';
@@ -13,9 +13,15 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertCircle,
+  CreditCard,
+  Calendar,
+  Clock,
+  AlertTriangle,
 } from 'lucide-react';
 import api from '../../../services/api.js';
 import { compressImage } from '../../../utils/imageCompressor.js';
+import { formatDateDMY, formatTime12h, calculateRemainingDays } from '../../../utils/formatters.js';
+import { RenewSubscriptionModal } from '../../auth/components/RenewSubscriptionModal.jsx';
 
 export const SettingsPage = () => {
   const { user, currentShop, updateCurrentShop, refreshUser } = useAuth();
@@ -36,17 +42,20 @@ export const SettingsPage = () => {
       '1. Device must be collected within 10 days.\n2. Physical damage and water damage are not covered under warranty.\n3. Warranty is not applicable if another technician opens or repairs the device.\n4. Data loss is not the responsibility of the workshop.'
   );
 
+  const [rawSettings, setRawSettings] = useState(null);
+  const [showRenewModal, setShowRenewModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Load latest settings on mount
-  useEffect(() => {
+  // Fetch latest settings from server
+  const fetchSettings = useCallback(() => {
     api
       .get('/settings')
       .then((res) => {
         if (res) {
+          setRawSettings(res);
           if (res.name || res.shopName) setShopName(res.name || res.shopName);
           if (res.businessType) setBusinessType(res.businessType);
           if (res.logo !== undefined) setLogo(res.logo || '');
@@ -68,6 +77,18 @@ export const SettingsPage = () => {
         console.error('Failed to fetch settings:', err);
       });
   }, []);
+
+  // Check URL tab parameter and load settings on mount
+  useEffect(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const tab = p.get('tab');
+      if (tab && ['profile', 'billing', 'terms', 'subscription'].includes(tab)) {
+        setActiveTab(tab);
+      }
+    } catch (_) {}
+    fetchSettings();
+  }, [fetchSettings]);
 
   // Process file upload (Validation: PNG, JPG, JPEG, WebP & <= 5MB)
   const handleFileSelected = async (file) => {
@@ -227,6 +248,7 @@ export const SettingsPage = () => {
             { id: 'profile', label: 'Shop Profile & Logo', icon: Building2 },
             { id: 'billing', label: 'Invoicing & Tax Rules', icon: FileText },
             { id: 'terms', label: 'Terms & Conditions', icon: Shield },
+            { id: 'subscription', label: 'Subscription & License', icon: CreditCard },
           ].map((item) => {
             const Icon = item.icon;
             const isSelected = activeTab === item.id;
@@ -591,20 +613,231 @@ export const SettingsPage = () => {
               </div>
             )}
 
-            {/* Save Workshop Settings Button */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '28px', paddingTop: '18px', borderTop: '1px solid var(--border-color)' }}>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isSaving || isUploadingLogo}
-                style={{ padding: '10px 24px', fontSize: '14px', fontWeight: '700' }}
-              >
-                <Save size={16} /> {isSaving ? 'Saving Workshop Settings...' : 'Save Workshop Settings'}
-              </button>
-            </div>
+            {activeTab === 'subscription' && (
+              <div>
+                <div style={{ paddingBottom: '14px', borderBottom: '1px solid var(--border-color)', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>
+                      Licensing & Validity Dossier
+                    </span>
+                    <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: '2px 0 0' }}>Workshop Subscription</h2>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => setShowRenewModal(true)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <CreditCard size={14} /> Renew / Change Tier
+                  </button>
+                </div>
+
+                {/* 4-Tile Telemetry Grid */}
+                {(() => {
+                  const subShop = rawSettings || currentShop || user?.shop || {};
+                  const startDate = subShop.subscriptionStartDate || subShop.subscriptionHistory?.[0]?.startDate || subShop.createdAt;
+                  const expiresAt = subShop.subscriptionExpiresAt;
+                  const serverTime = subShop.serverTime || new Date();
+                  const isExpired = (subShop.calculatedStatus || subShop.subscriptionStatus) === 'EXPIRED' ||
+                    (expiresAt && new Date(expiresAt).getTime() <= new Date(serverTime).getTime());
+                  const isExpiringSoon = !isExpired && (subShop.calculatedStatus === 'EXPIRING_SOON' || subShop.subscriptionStatus === 'EXPIRING_SOON');
+                  const daysRemaining = typeof subShop.daysRemaining === 'number'
+                    ? subShop.daysRemaining
+                    : calculateRemainingDays(expiresAt, serverTime);
+
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+                      {/* Tile 1: Current Plan */}
+                      <div style={{ padding: '16px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Active Plan</span>
+                        <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
+                          {subShop.subscription || 'Starter Tier'}
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: '#2563eb', fontWeight: '600', marginTop: '2px', textTransform: 'capitalize' }}>
+                          {subShop.subscriptionBillingCycle || 'monthly'} Billing • {subShop.subscriptionPaymentStatus || 'PAID'}
+                        </div>
+                      </div>
+
+                      {/* Tile 2: Plan Start Date */}
+                      <div style={{ padding: '16px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Plan Start Date</span>
+                        <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', marginTop: '4px', fontFamily: 'JetBrains Mono, monospace' }}>
+                          {formatDateDMY(startDate)}
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                          Start Time: {formatTime12h(startDate)}
+                        </div>
+                      </div>
+
+                      {/* Tile 3: Plan Expiry Date & Expiry Time */}
+                      <div
+                        style={{
+                          padding: '16px',
+                          borderRadius: '10px',
+                          background: isExpired ? '#fef2f2' : '#f8fafc',
+                          border: `1px solid ${isExpired ? '#fca5a5' : '#e2e8f0'}`,
+                        }}
+                      >
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: isExpired ? '#b91c1c' : '#64748b', textTransform: 'uppercase' }}>
+                          Plan Expiry Date
+                        </span>
+                        <div
+                          style={{
+                            fontSize: '14px',
+                            fontWeight: '800',
+                            color: isExpired ? '#dc2626' : '#2563eb',
+                            marginTop: '4px',
+                            fontFamily: 'JetBrains Mono, monospace',
+                          }}
+                        >
+                          {formatDateDMY(expiresAt)}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '11.5px',
+                            color: isExpired ? '#dc2626' : '#64748b',
+                            marginTop: '2px',
+                            fontWeight: isExpired ? '700' : '500',
+                          }}
+                        >
+                          Expiry Time: {formatTime12h(expiresAt)}
+                        </div>
+                      </div>
+
+                      {/* Tile 4: Status & Days Remaining */}
+                      <div
+                        style={{
+                          padding: '16px',
+                          borderRadius: '10px',
+                          background: isExpired ? '#fef2f2' : '#f8fafc',
+                          border: `1px solid ${isExpired ? '#fca5a5' : '#e2e8f0'}`,
+                        }}
+                      >
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: isExpired ? '#b91c1c' : '#64748b', textTransform: 'uppercase' }}>
+                          Subscription Status
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                          <span
+                            className={`status-badge ${
+                              isExpired ? 'badge-red' : isExpiringSoon ? 'badge-amber' : 'badge-green'
+                            }`}
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              padding: '3px 8px',
+                              backgroundColor: isExpired ? '#fee2e2' : isExpiringSoon ? '#fef3c7' : '#d1fae5',
+                              color: isExpired ? '#991b1b' : isExpiringSoon ? '#92400e' : '#065f46',
+                              border: `1px solid ${isExpired ? '#f87171' : isExpiringSoon ? '#fcd34d' : '#6ee7b7'}`,
+                            }}
+                          >
+                            {isExpired ? 'Expired' : isExpiringSoon ? 'Expiring Soon' : 'Active'}
+                          </span>
+                          <strong
+                            style={{
+                              fontSize: '12px',
+                              color: isExpired ? '#dc2626' : daysRemaining <= 7 ? '#d97706' : '#059669',
+                            }}
+                          >
+                            {isExpired ? '0 days left' : `${daysRemaining} days left`}
+                          </strong>
+                        </div>
+                        <div style={{ fontSize: '11px', color: isExpired ? '#b91c1c' : '#64748b', marginTop: '2px' }}>
+                          {isExpired ? 'Access blocked (Expired)' : 'Workshop active & operational'}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Subscription Renewal History Table */}
+                {rawSettings?.subscriptionHistory && rawSettings.subscriptionHistory.length > 0 && (
+                  <div>
+                    <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', marginBottom: '12px' }}>
+                      Subscription Validity History
+                    </h3>
+                    <div className="table-container" style={{ border: '1px solid #e2e8f0', borderRadius: '10px' }}>
+                      <table className="pro-table">
+                        <thead>
+                          <tr>
+                            <th>Renewed On</th>
+                            <th>Plan Name</th>
+                            <th>Validity Period</th>
+                            <th>Billing Cycle</th>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rawSettings.subscriptionHistory.map((h, i) => (
+                            <tr key={h._id || i}>
+                              <td>
+                                <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a', fontFamily: 'JetBrains Mono, monospace' }}>
+                                  {formatDateDMY(h.renewedAt || h.startDate)}
+                                </span>
+                              </td>
+                              <td>
+                                <strong style={{ color: '#2563eb', fontSize: '12.5px' }}>{h.planName}</strong>
+                              </td>
+                              <td>
+                                <span style={{ fontSize: '11.5px', color: '#334155', fontFamily: 'JetBrains Mono, monospace' }}>
+                                  {formatDateDMY(h.startDate)} – {formatDateDMY(h.expiresAt)}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{ fontSize: '11.5px', color: '#64748b', textTransform: 'capitalize' }}>
+                                  {h.billingCycle}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{ fontFamily: 'JetBrains Mono', fontSize: '12px', fontWeight: '700', color: '#0f172a' }}>
+                                  ₹{(h.amount || 0).toLocaleString('en-IN')}
+                                </span>
+                              </td>
+                              <td>
+                                <div style={{ fontSize: '11px', color: '#64748b' }}>
+                                  {h.paymentMethod || 'Online'}
+                                  {h.referenceId && <small style={{ display: 'block', color: '#94a3b8' }}>{h.referenceId}</small>}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Save Workshop Settings Button (hidden on Subscription tab) */}
+            {activeTab !== 'subscription' && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '28px', paddingTop: '18px', borderTop: '1px solid var(--border-color)' }}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={isSaving || isUploadingLogo}
+                  style={{ padding: '10px 24px', fontSize: '14px', fontWeight: '700' }}
+                >
+                  <Save size={16} /> {isSaving ? 'Saving Workshop Settings...' : 'Save Workshop Settings'}
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>
+
+      {showRenewModal && (
+        <RenewSubscriptionModal
+          shopId={rawSettings?._id || currentShop?._id || user?.shopId}
+          shopName={rawSettings?.name || currentShop?.name || user?.shopName}
+          currentPlan={rawSettings?.subscription || currentShop?.subscription}
+          onClose={() => setShowRenewModal(false)}
+          onSuccess={() => {
+            fetchSettings();
+            if (refreshUser) refreshUser();
+          }}
+        />
+      )}
     </MainLayout>
   );
 };
