@@ -154,6 +154,31 @@ export class ShopService {
       throw new Error('A workshop with this email or code already exists.');
     }
 
+    const now = new Date();
+    if (!data.subscriptionStartDate) {
+      data.subscriptionStartDate = now;
+    }
+    if (!data.subscriptionExpiresAt) {
+      data.subscriptionExpiresAt = new Date(new Date(data.subscriptionStartDate).getTime() + 30 * 24 * 60 * 60 * 1000);
+    }
+    if (!data.subscriptionHistory || data.subscriptionHistory.length === 0) {
+      data.subscriptionHistory = [
+        {
+          planName: data.subscription || 'Starter Tier',
+          startDate: data.subscriptionStartDate,
+          expiresAt: data.subscriptionExpiresAt,
+          billingCycle: data.subscriptionBillingCycle || 'monthly',
+          amount: 0,
+          paymentStatus: 'PAID',
+          paymentMethod: 'Initial Setup',
+          referenceId: `INIT-${data.code || Date.now()}`,
+          renewedAt: now,
+          renewedBy: req?.user?.role || 'SUPER_ADMIN',
+          notes: 'Initial workshop subscription tier setup',
+        },
+      ];
+    }
+
     const shop = await Shop.create(data);
 
     // Audit log

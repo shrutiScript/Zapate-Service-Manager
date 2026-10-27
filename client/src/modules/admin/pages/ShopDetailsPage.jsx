@@ -261,25 +261,38 @@ export const ShopDetailsPage = () => {
         </div>
 
         {/* Live Server-Synced Countdown & Expiry Bar */}
-        {shop.subscriptionExpiresAt && (
-          <div style={{ marginBottom: '20px' }}>
-            <SubscriptionCountdownBar
-              shop={shop}
-              serverTime={data?.subscription?.serverTime || shop.serverTime}
-              onRenewSuccess={() => loadShopData()}
-            />
-          </div>
-        )}
+        {(() => {
+          const mergedShop = {
+            ...shop,
+            ...(data?.subscription || {}),
+            subscriptionExpiresAt: shop.subscriptionExpiresAt || data?.subscription?.expiresAt || data?.subscription?.subscriptionExpiresAt,
+            expiresAt: data?.subscription?.expiresAt || shop.subscriptionExpiresAt,
+            subscriptionStartDate: shop.subscriptionStartDate || data?.subscription?.startDate,
+            startDate: data?.subscription?.startDate || shop.subscriptionStartDate,
+          };
+          if (!mergedShop.subscriptionExpiresAt && !mergedShop.expiresAt) return null;
+          return (
+            <div style={{ marginBottom: '20px' }}>
+              <SubscriptionCountdownBar
+                shop={mergedShop}
+                serverTime={data?.subscription?.serverTime || shop.serverTime}
+                onRenewSuccess={() => loadShopData()}
+              />
+            </div>
+          );
+        })()}
 
         {/* 4-Tile Telemetry Grid */}
         {(() => {
-          const startDate = shop.subscriptionStartDate || shop.subscriptionHistory?.[0]?.startDate || shop.createdAt;
-          const expiresAt = shop.subscriptionExpiresAt;
+          const startDate = data?.subscription?.startDate || shop.subscriptionStartDate || shop.subscriptionHistory?.[0]?.startDate || shop.createdAt;
+          const expiresAt = data?.subscription?.expiresAt || shop.subscriptionExpiresAt;
           const serverTime = data?.subscription?.serverTime || shop.serverTime || new Date();
           const isExpired = (shop.calculatedStatus || shop.subscriptionStatus) === 'EXPIRED' ||
             (expiresAt && new Date(expiresAt).getTime() <= new Date(serverTime).getTime());
           const isExpiringSoon = !isExpired && (shop.calculatedStatus === 'EXPIRING_SOON' || shop.subscriptionStatus === 'EXPIRING_SOON');
-          const daysRemaining = typeof shop.daysRemaining === 'number'
+          const daysRemaining = isExpired
+            ? 0
+            : typeof shop.daysRemaining === 'number'
             ? shop.daysRemaining
             : (typeof data?.subscription?.daysRemaining === 'number'
                 ? data.subscription.daysRemaining
@@ -378,7 +391,7 @@ export const ShopDetailsPage = () => {
                       color: isExpired ? '#dc2626' : daysRemaining <= 7 ? '#d97706' : '#059669',
                     }}
                   >
-                    {isExpired ? '0 days left' : `${daysRemaining} days left`}
+                    {isExpired ? '0 days left (Expired)' : `${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} left`}
                   </strong>
                 </div>
                 <div style={{ fontSize: '11px', color: isExpired ? '#b91c1c' : '#64748b', marginTop: '2px' }}>

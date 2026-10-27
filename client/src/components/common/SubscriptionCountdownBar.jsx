@@ -25,48 +25,60 @@ export const SubscriptionCountdownBar = ({
 }) => {
   const [showRenewModal, setShowRenewModal] = useState(false);
 
-  // Calculate stable server time offset
-  const serverOffsetMs = useMemo(() => {
-    if (!initialServerTime) return 0;
-    const sTime = new Date(initialServerTime).getTime();
-    if (isNaN(sTime)) return 0;
-    return sTime - Date.now();
+  // Stable server time offset
+  const serverOffsetRef = React.useRef(0);
+  useEffect(() => {
+    if (initialServerTime) {
+      const sTime = new Date(initialServerTime).getTime();
+      if (!isNaN(sTime)) {
+        serverOffsetRef.current = sTime - Date.now();
+      }
+    }
   }, [initialServerTime]);
 
-  const [currentServerTime, setCurrentServerTime] = useState(() => Date.now() + serverOffsetMs);
+  const [currentServerTime, setCurrentServerTime] = useState(() => {
+    if (initialServerTime) {
+      const sTime = new Date(initialServerTime).getTime();
+      if (!isNaN(sTime)) return sTime;
+    }
+    return Date.now();
+  });
 
-  const expiresAt = shop?.subscriptionExpiresAt ? new Date(shop.subscriptionExpiresAt) : null;
-  const startDate = shop?.subscriptionStartDate ? new Date(shop.subscriptionStartDate) : null;
-  const planName = shop?.subscription || 'Workshop Plan';
-  const billingCycle = shop?.subscriptionBillingCycle || 'monthly';
+  const rawExpiresAt = shop?.subscriptionExpiresAt || shop?.expiresAt;
+  const rawStartDate = shop?.subscriptionStartDate || shop?.startDate;
+  const expiresAt = useMemo(() => (rawExpiresAt ? new Date(rawExpiresAt) : null), [rawExpiresAt]);
+  const startDate = useMemo(() => (rawStartDate ? new Date(rawStartDate) : null), [rawStartDate]);
+  const planName = shop?.subscription || shop?.plan || 'Workshop Plan';
+  const billingCycle = shop?.subscriptionBillingCycle || shop?.billingCycle || 'monthly';
 
   // 1-second server time synchronization tick
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentServerTime(Date.now() + serverOffsetMs);
-    }, 1000);
+    const updateTick = () => {
+      setCurrentServerTime(Date.now() + serverOffsetRef.current);
+    };
+    updateTick();
+    const timer = setInterval(updateTick, 1000);
 
     return () => clearInterval(timer);
-  }, [serverOffsetMs]);
+  }, []);
 
   // Derived countdown state
   const countdown = useMemo(() => {
     if (!expiresAt || isNaN(expiresAt.getTime())) {
-      return { isExpired: false, days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0, daysRemaining: 0 };
+      return { isExpired: false, days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0 };
     }
 
     const expiryMs = expiresAt.getTime();
     const diffMs = expiryMs - currentServerTime;
 
     if (diffMs <= 0) {
-      return { isExpired: true, days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0, daysRemaining: 0 };
+      return { isExpired: true, days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0 };
     }
 
     const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
     const hours = Math.floor((diffMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
     const minutes = Math.floor((diffMs % (60 * 60 * 1000)) / (60 * 1000));
     const seconds = Math.floor((diffMs % (60 * 1000)) / 1000);
-    const daysRemaining = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
 
     return {
       isExpired: false,
@@ -75,31 +87,23 @@ export const SubscriptionCountdownBar = ({
       minutes,
       seconds,
       totalMs: diffMs,
-      daysRemaining,
     };
   }, [expiresAt, currentServerTime]);
 
-  // Automatic logout when countdown reaches zero
-  useEffect(() => {
-    if (expiresAt && countdown.isExpired) {
-      const activeUser = getActiveUser();
-      if (activeUser?.role === 'SUPER_ADMIN') return; // Super Admin is exempt
-
-      const expiredMsg = 'Your subscription has expired. Please renew your subscription to continue.';
-      setExpiredNotice(expiredMsg);
-      broadcastSubscriptionExpired({ shopId: shop?._id || shop?.id, message: expiredMsg });
-      clearActiveSession();
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-        window.location.replace('/login');
-      }
-    }
-  }, [countdown.isExpired, expiresAt, shop]);
-
   if (!expiresAt) return null;
 
-  const isExpired = countdown.isExpired || String(shop?.subscriptionStatus || '').toUpperCase() === 'EXPIRED';
-  const isExpiringSoon = !isExpired && countdown.daysRemaining <= 7;
-  const isFinalDay = !isExpired && countdown.daysRemaining === 1;
+  const isExpired = countdown.isExpired || String(shop?.subscriptionStatus || shop?.status || '').toUpperCase() === 'EXPIRED';
+  const isExpiringSoon = !isExpired && countdown.days <= 7;
+  const isFinalDay = !isExpired && countdown.days === 0;
+
+  // Exact unified rule for Days Remaining label to match countdown box
+  const badgeLabel = isExpired
+    ? 'Subscription Expired'
+    : countdown.days > 1
+    ? `${countdown.days} Days Remaining`
+    : countdown.days === 1
+    ? '1 Day Remaining'
+    : `Expires Today (${countdown.hours}h left)`;
 
   // Theme styling based on urgency
   const statusTheme = isExpired
@@ -110,17 +114,17 @@ export const SubscriptionCountdownBar = ({
         badgeColor: '#fca5a5',
         badgeBorder: '#ef4444',
         accentColor: '#f87171',
-        label: 'Subscription Expired',
+        label: badgeLabel,
       }
     : isExpiringSoon
     ? {
         bg: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)',
-        border: isFinalDay ? '#f59e0b' : '#3b82f6',
-        badgeBg: isFinalDay ? 'rgba(245, 158, 11, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-        badgeColor: isFinalDay ? '#fcd34d' : '#93c5fd',
-        badgeBorder: isFinalDay ? '#f59e0b' : '#3b82f6',
-        accentColor: isFinalDay ? '#fbbf24' : '#60a5fa',
-        label: isFinalDay ? 'Expires Tomorrow' : `${countdown.daysRemaining} Days Remaining`,
+        border: isFinalDay ? '#ef4444' : countdown.days <= 3 ? '#f59e0b' : '#3b82f6',
+        badgeBg: isFinalDay ? 'rgba(239, 68, 68, 0.2)' : countdown.days <= 3 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+        badgeColor: isFinalDay ? '#fca5a5' : countdown.days <= 3 ? '#fcd34d' : '#93c5fd',
+        badgeBorder: isFinalDay ? '#ef4444' : countdown.days <= 3 ? '#f59e0b' : '#3b82f6',
+        accentColor: isFinalDay ? '#f87171' : countdown.days <= 3 ? '#fbbf24' : '#60a5fa',
+        label: badgeLabel,
       }
     : {
         bg: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
@@ -129,7 +133,7 @@ export const SubscriptionCountdownBar = ({
         badgeColor: '#6ee7b7',
         badgeBorder: '#10b981',
         accentColor: '#34d399',
-        label: `${countdown.daysRemaining} Days Remaining`,
+        label: badgeLabel,
       };
 
   return (

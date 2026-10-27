@@ -7,13 +7,15 @@ const router = Router();
 const controller = new NotificationController();
 
 router.use(authMiddleware);
-router.use(requireModule('notifications'));
 
+// In-App notifications retrieval and status management (for bell dropdown and notification center)
 router.get('/', controller.getAll);
-router.post('/send', controller.send);
-router.get('/templates', controller.getTemplates);
 router.patch('/read-all', controller.markAllAsRead);
 router.patch('/:id/read', controller.markAsRead);
 router.delete('/:id', controller.delete);
+
+// Outbound customer dispatch (SMS / WhatsApp campaign messages)
+router.post('/send', requireModule('notifications'), controller.send);
+router.get('/templates', requireModule('notifications'), controller.getTemplates);
 
 export { router as notificationRoutes };

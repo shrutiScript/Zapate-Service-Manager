@@ -114,9 +114,16 @@ export const ShopManagementPage = () => {
 
   const hasActiveFilters = search || planFilter !== 'ALL' || subStatusFilter !== 'ALL' || expiryFilter !== 'ALL' || paymentFilter !== 'ALL';
 
-  const getSubStatusBadge = (shop) => {
-    const status = (shop.calculatedStatus || shop.subscriptionStatus || 'ACTIVE').toUpperCase();
-    if (status === 'EXPIRED') {
+  const getSubStatusBadge = (shop, isExpiredProp = null, daysRemainingProp = null) => {
+    const expiryDate = shop.subscriptionExpiresAt;
+    const nowMs = shop.serverTime ? new Date(shop.serverTime).getTime() : Date.now();
+    const isExpired =
+      isExpiredProp !== null
+        ? isExpiredProp
+        : (shop.calculatedStatus || shop.subscriptionStatus) === 'EXPIRED' ||
+          (expiryDate && new Date(expiryDate).getTime() <= nowMs);
+
+    if (isExpired) {
       return (
         <span
           className="status-badge badge-red"
@@ -136,7 +143,16 @@ export const ShopManagementPage = () => {
         </span>
       );
     }
-    if (status === 'EXPIRING_SOON') {
+
+    const days =
+      typeof daysRemainingProp === 'number'
+        ? daysRemainingProp
+        : typeof shop.daysRemaining === 'number'
+        ? shop.daysRemaining
+        : calculateRemainingDays(expiryDate, nowMs);
+
+    const status = (shop.calculatedStatus || shop.subscriptionStatus || 'ACTIVE').toUpperCase();
+    if (status === 'EXPIRING_SOON' || (days <= 7 && days > 0)) {
       return (
         <span
           className="status-badge badge-amber"
@@ -418,9 +434,9 @@ export const ShopManagementPage = () => {
       </div>
 
       {/* Workshops Table */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="card workshops-desktop-table" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="table-container" style={{ border: 'none', boxShadow: 'none' }}>
-          <table className="pro-table">
+          <table className="pro-table" style={{ minWidth: '1150px' }}>
             <thead>
               <tr>
                 <th>Workshop & ID</th>
@@ -472,13 +488,15 @@ export const ShopManagementPage = () => {
                 shops.map((shop) => {
                   const startDate = shop.subscriptionStartDate || shop.subscriptionHistory?.[0]?.startDate || shop.createdAt;
                   const expiryDate = shop.subscriptionExpiresAt;
+                  const nowMs = shop.serverTime ? new Date(shop.serverTime).getTime() : Date.now();
                   const isExpired =
                     (shop.calculatedStatus || shop.subscriptionStatus) === 'EXPIRED' ||
-                    (expiryDate && new Date(expiryDate).getTime() <= (shop.serverTime ? new Date(shop.serverTime).getTime() : Date.now()));
-                  const daysRemaining =
-                    typeof shop.daysRemaining === 'number'
-                      ? shop.daysRemaining
-                      : calculateRemainingDays(expiryDate, shop.serverTime || new Date());
+                    (expiryDate && new Date(expiryDate).getTime() <= nowMs);
+                  const daysRemaining = isExpired
+                    ? 0
+                    : typeof shop.daysRemaining === 'number'
+                    ? shop.daysRemaining
+                    : calculateRemainingDays(expiryDate, nowMs);
 
                   return (
                     <tr
@@ -645,13 +663,13 @@ export const ShopManagementPage = () => {
                               }`,
                             }}
                           >
-                            {isExpired ? '0 days (Expired)' : `${daysRemaining} days left`}
+                            {isExpired ? '0 days (Expired)' : `${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} left`}
                           </span>
                         </div>
                       </td>
 
                       {/* Subscription Status */}
-                      <td>{getSubStatusBadge(shop)}</td>
+                      <td>{getSubStatusBadge(shop, isExpired, daysRemaining)}</td>
 
                       {/* Payment Status */}
                       <td>{getPaymentStatusBadge(shop)}</td>
@@ -724,6 +742,219 @@ export const ShopManagementPage = () => {
           </table>
         </div>
       </div>
+
+      {/* Mobile / Small Screen Card View (visible on screens <= 840px) */}
+      <div className="workshops-mobile-cards" style={{ display: 'none', flexDirection: 'column', gap: '14px' }}>
+        {isLoading ? (
+          <div className="card" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+            <RefreshCw size={18} className="animate-spin" />
+            <p style={{ marginTop: '8px' }}>Loading workshops and subscription data...</p>
+          </div>
+        ) : shops.length === 0 ? (
+          <div className="card" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+            <Store size={32} style={{ color: '#cbd5e1' }} />
+            <strong style={{ color: '#475569', display: 'block', marginTop: '8px' }}>No workshops match your criteria.</strong>
+          </div>
+        ) : (
+          shops.map((shop) => {
+            const startDate = shop.subscriptionStartDate || shop.subscriptionHistory?.[0]?.startDate || shop.createdAt;
+            const expiryDate = shop.subscriptionExpiresAt;
+            const nowMs = shop.serverTime ? new Date(shop.serverTime).getTime() : Date.now();
+            const isExpired =
+              (shop.calculatedStatus || shop.subscriptionStatus) === 'EXPIRED' ||
+              (expiryDate && new Date(expiryDate).getTime() <= nowMs);
+            const daysRemaining = isExpired
+              ? 0
+              : typeof shop.daysRemaining === 'number'
+              ? shop.daysRemaining
+              : calculateRemainingDays(expiryDate, nowMs);
+
+            return (
+              <div
+                key={shop._id}
+                className="card workshop-mobile-item"
+                style={{
+                  padding: '16px',
+                  borderRadius: '12px',
+                  border: isExpired ? '1.5px solid #fca5a5' : '1px solid #e2e8f0',
+                  background: isExpired ? '#fef2f2' : '#ffffff',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                }}
+              >
+                {/* Header: Shop info & status */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '8px',
+                        background: '#eff6ff',
+                        overflow: 'hidden',
+                        border: isExpired ? '1px solid #fca5a5' : '1px solid #bfdbfe',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {shop.logo ? (
+                        <img src={shop.logo} alt={shop.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <Store size={18} style={{ color: '#2563eb' }} />
+                      )}
+                    </div>
+                    <div>
+                      <strong style={{ fontSize: '14px', color: '#0f172a', display: 'block' }}>{shop.name}</strong>
+                      <span style={{ fontFamily: 'JetBrains Mono', color: '#2563eb', fontSize: '11px', fontWeight: '700' }}>
+                        {shop.code || shop._id?.slice(-6)}
+                      </span>
+                    </div>
+                  </div>
+                  <div>{getSubStatusBadge(shop, isExpired, daysRemaining)}</div>
+                </div>
+
+                {/* Owner info */}
+                <div style={{ fontSize: '12px', color: '#475569', marginBottom: '12px', lineHeight: '1.4' }}>
+                  <div><strong>Owner:</strong> {shop.ownerName} ({shop.ownerEmail})</div>
+                  <div><strong>Contact:</strong> {shop.shopContactNumber || shop.ownerMobile || '—'}</div>
+                  <div style={{ marginTop: '2px' }}>
+                    <strong>Plan:</strong>{' '}
+                    <span style={{ color: '#1d4ed8', fontWeight: '700' }}>{shop.subscription || 'Starter Tier'}</span> ({shop.subscriptionBillingCycle || 'monthly'} • {shop.subscriptionPaymentStatus || 'PAID'})
+                  </div>
+                </div>
+
+                {/* Responsive Subscription Dates Box */}
+                <div
+                  style={{
+                    background: isExpired ? 'rgba(254, 226, 226, 0.5)' : '#f8fafc',
+                    border: isExpired ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                    gap: '10px',
+                    marginBottom: '14px',
+                  }}
+                >
+                  <div>
+                    <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>
+                      Plan Start Date
+                    </span>
+                    <strong style={{ fontSize: '12.5px', color: '#0f172a', fontFamily: 'JetBrains Mono, monospace' }}>
+                      {formatDateDMY(startDate)}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '10px', color: isExpired ? '#b91c1c' : '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>
+                      Plan Expiry Date
+                    </span>
+                    <strong style={{ fontSize: '12.5px', color: isExpired ? '#dc2626' : '#0f172a', fontFamily: 'JetBrains Mono, monospace' }}>
+                      {formatDateDMY(expiryDate)}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '10px', color: isExpired ? '#b91c1c' : '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>
+                      Expiry Time
+                    </span>
+                    <strong style={{ fontSize: '12px', color: isExpired ? '#dc2626' : '#334155', fontFamily: 'JetBrains Mono, monospace' }}>
+                      {formatTime12h(expiryDate)}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>
+                      Days Remaining
+                    </span>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        color: isExpired ? '#dc2626' : daysRemaining <= 7 ? '#b45309' : '#047857',
+                      }}
+                    >
+                      {isExpired ? '0 days (Expired)' : `${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} left`}
+                    </span>
+                  </div>
+
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', display: 'block' }}>
+                      Subscription Status
+                    </span>
+                    <div style={{ marginTop: '2px' }}>
+                      {getSubStatusBadge(shop, isExpired, daysRemaining)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    type="button"
+                    onClick={() => setSelectedSubShop(shop)}
+                    style={{ color: '#2563eb', borderColor: '#bfdbfe', background: '#eff6ff', fontSize: '11px', padding: '4px 8px' }}
+                  >
+                    <CreditCard size={12} /> Subscription
+                  </button>
+                  <Link href={`/admin/shops/${shop._id}`}>
+                    <button className="btn btn-secondary btn-sm" type="button" style={{ fontSize: '11px', padding: '4px 8px' }}>
+                      <Eye size={12} /> Details
+                    </button>
+                  </Link>
+                  <Link href={`/admin/login-activity?shopId=${shop._id}`}>
+                    <button className="btn btn-secondary btn-sm" type="button" style={{ fontSize: '11px', padding: '4px 8px' }}>
+                      <Activity size={12} /> Activity
+                    </button>
+                  </Link>
+                  {shop.status === 'BLOCKED' ? (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      type="button"
+                      onClick={() => handleUnblock(shop)}
+                      style={{ color: '#059669', borderColor: '#a7f3d0', fontSize: '11px', padding: '4px 8px' }}
+                    >
+                      <ShieldCheck size={12} /> Unblock
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      type="button"
+                      onClick={() => setSelectedBlockShop(shop)}
+                      style={{ color: '#dc2626', borderColor: '#fecaca', fontSize: '11px', padding: '4px 8px' }}
+                    >
+                      <ShieldBan size={12} /> Block
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Responsive Viewport CSS */}
+      <style>{`
+        @media (max-width: 840px) {
+          .workshops-desktop-table {
+            display: none !important;
+          }
+          .workshops-mobile-cards {
+            display: flex !important;
+          }
+        }
+        @media (min-width: 841px) {
+          .workshops-desktop-table {
+            display: block !important;
+          }
+          .workshops-mobile-cards {
+            display: none !important;
+          }
+        }
+      `}</style>
 
       {/* Subscription Dossier & Action Modal */}
       {selectedSubShop && (

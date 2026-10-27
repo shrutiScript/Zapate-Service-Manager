@@ -1,9 +1,28 @@
 import { Notification } from './notification.model.js';
 
 export class NotificationService {
-  async getAll(shopId = null) {
-    const filter = shopId ? { shopId } : {};
-    return Notification.find(filter).sort({ sentAt: -1, createdAt: -1 });
+  async getAll(shopId = null, userId = null, isSuperAdmin = false) {
+    let filter = {};
+    if (isSuperAdmin) {
+      filter = {};
+    } else if (userId && shopId) {
+      filter = {
+        $or: [
+          { userId },
+          { shopId, userId: { $in: [null, undefined] } }
+        ]
+      };
+    } else if (userId) {
+      filter = {
+        $or: [
+          { userId },
+          { userId: { $in: [null, undefined] } }
+        ]
+      };
+    } else if (shopId) {
+      filter = { shopId };
+    }
+    return Notification.find(filter).sort({ sentAt: -1, createdAt: -1 }).limit(100);
   }
 
   async send(data, shopId = null) {
@@ -30,14 +49,37 @@ export class NotificationService {
     return Notification.findOneAndDelete(filter);
   }
 
-  async markAsRead(id, shopId = null) {
+  async markAsRead(id, shopId = null, userId = null, isSuperAdmin = false) {
     const filter = { _id: id };
-    if (shopId) filter.shopId = shopId;
+    if (!isSuperAdmin) {
+      if (userId && shopId) {
+        filter.$or = [
+          { userId },
+          { shopId, userId: { $in: [null, undefined] } }
+        ];
+      } else if (userId) {
+        filter.userId = userId;
+      } else if (shopId) {
+        filter.shopId = shopId;
+      }
+    }
     return Notification.findOneAndUpdate(filter, { status: 'Read' }, { new: true });
   }
 
-  async markAllAsRead(shopId = null) {
-    const filter = shopId ? { shopId } : {};
+  async markAllAsRead(shopId = null, userId = null, isSuperAdmin = false) {
+    let filter = { status: { $ne: 'Read' } };
+    if (!isSuperAdmin) {
+      if (userId && shopId) {
+        filter.$or = [
+          { userId },
+          { shopId, userId: { $in: [null, undefined] } }
+        ];
+      } else if (userId) {
+        filter.userId = userId;
+      } else if (shopId) {
+        filter.shopId = shopId;
+      }
+    }
     return Notification.updateMany(filter, { status: 'Read' });
   }
 

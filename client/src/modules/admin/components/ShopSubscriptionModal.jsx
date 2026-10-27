@@ -385,7 +385,7 @@ export const ShopSubscriptionModal = ({ shop, onClose, onSuccess }) => {
                               : '#059669',
                         }}
                       >
-                        {details.status === 'EXPIRED' ? 'Expired' : `${details.daysRemaining} Days Left`}
+                        {details.status === 'EXPIRED' ? 'Expired' : `${details.daysRemaining} ${details.daysRemaining === 1 ? 'Day' : 'Days'} Left`}
                       </div>
                       <div style={{ fontSize: '11px', color: '#64748b' }}>
                         Server time: {new Date(details.serverTime).toLocaleTimeString()}

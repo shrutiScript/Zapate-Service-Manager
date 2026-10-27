@@ -6,7 +6,8 @@ const notificationService = new NotificationService();
 export class NotificationController {
   async getAll(req, res, next) {
     try {
-      const notifications = await notificationService.getAll(req.shopId);
+      const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+      const notifications = await notificationService.getAll(req.shopId, req.user?._id, isSuperAdmin);
       return sendSuccess(res, notifications);
     } catch (err) {
       next(err);
@@ -42,7 +43,8 @@ export class NotificationController {
 
   async markAsRead(req, res, next) {
     try {
-      const notification = await notificationService.markAsRead(req.params.id, req.shopId);
+      const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+      const notification = await notificationService.markAsRead(req.params.id, req.shopId, req.user?._id, isSuperAdmin);
       return sendSuccess(res, notification, 'Notification marked as read');
     } catch (err) {
       next(err);
@@ -51,7 +53,8 @@ export class NotificationController {
 
   async markAllAsRead(req, res, next) {
     try {
-      await notificationService.markAllAsRead(req.shopId);
+      const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+      await notificationService.markAllAsRead(req.shopId, req.user?._id, isSuperAdmin);
       return sendSuccess(res, null, 'All notifications marked as read');
     } catch (err) {
       next(err);

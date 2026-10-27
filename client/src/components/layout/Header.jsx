@@ -20,6 +20,9 @@ import {
   ArrowRight,
   Filter,
   Loader2,
+  ThumbsUp,
+  MessageCircle,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useApp } from '../../context/AppContext.jsx';
@@ -217,6 +220,74 @@ export const Header = ({ title, subtitle, isAdmin = false }) => {
     } catch (err) {
       console.error('Failed to mark all as read:', err);
     }
+  };
+
+  const handleNotificationClick = async (n) => {
+    if (n.status !== 'Read') {
+      await handleMarkAsRead(n._id);
+    }
+    setIsDropdownOpen(false);
+
+    if (n.postId || n.link) {
+      const destination = n.link || `/community?post=${n.postId}${n.commentId ? `#comment-${n.commentId}` : ''}`;
+      setLocation(destination);
+    } else if (n.jobCardNumber) {
+      setLocation('/repairs');
+    } else if (n.invoiceNumber) {
+      setLocation('/pos');
+    }
+  };
+
+  const getNotificationTheme = (n) => {
+    const type = String(n.type || '').toLowerCase();
+    const actionType = String(n.actionType || '').toUpperCase();
+
+    if (type.includes('subscription')) {
+      return {
+        icon: <AlertTriangle size={15} />,
+        bg: '#fef3c7',
+        color: '#d97706',
+        isSubAlert: true,
+      };
+    }
+    if (actionType === 'COMMUNITY_LIKE' || type.includes('like')) {
+      return {
+        icon: <ThumbsUp size={14} />,
+        bg: '#fce7f3',
+        color: '#db2777',
+        isSubAlert: false,
+      };
+    }
+    if (actionType === 'COMMUNITY_REPLY' || type.includes('reply')) {
+      return {
+        icon: <MessageCircle size={14} />,
+        bg: '#f3e8ff',
+        color: '#7c3aed',
+        isSubAlert: false,
+      };
+    }
+    if (actionType === 'COMMUNITY_COMMENT' || type.includes('comment')) {
+      return {
+        icon: <MessageCircle size={14} />,
+        bg: '#ecfdf5',
+        color: '#059669',
+        isSubAlert: false,
+      };
+    }
+    if (actionType === 'COMMUNITY_POST' || type.includes('community')) {
+      return {
+        icon: <Sparkles size={14} />,
+        bg: '#eff6ff',
+        color: '#2563eb',
+        isSubAlert: false,
+      };
+    }
+    return {
+      icon: <MessageSquare size={14} />,
+      bg: '#eff6ff',
+      color: '#2563eb',
+      isSubAlert: false,
+    };
   };
 
   // Helper to get category icon
@@ -746,28 +817,31 @@ export const Header = ({ title, subtitle, isAdmin = false }) => {
 
               {/* Scrollable list */}
               <div style={{ overflowY: 'auto', flex: 1, maxHeight: '340px' }}>
-                {notifications.length === 0 ? (
+                {notifications.length === 0 || unreadCount === 0 ? (
                   <div style={{ textAlign: 'center', padding: '36px 16px', color: '#94a3b8' }}>
                     <MessageSquare size={28} style={{ margin: '0 auto 8px', color: '#cbd5e1' }} />
                     <p style={{ margin: 0, fontSize: '13px', fontWeight: '500' }}>No notifications right now</p>
                     <span style={{ fontSize: '11px', color: '#94a3b8' }}>You are completely caught up!</span>
                   </div>
                 ) : (
-                  notifications.slice(0, 15).map((n) => {
-                    const isSubAlert =
-                      n.type === 'Subscription Alert' ||
-                      n.type === 'Subscription Expiry' ||
-                      String(n.type || '').toLowerCase().includes('subscription');
+                  notifications.slice(0, 25).map((n) => {
+                    const theme = getNotificationTheme(n);
                     const isUnread = n.status !== 'Read';
 
                     return (
                       <div
                         key={n._id}
-                        onClick={() => handleMarkAsRead(n._id)}
+                        onClick={() => handleNotificationClick(n)}
                         style={{
                           padding: '12px 16px',
                           borderBottom: '1px solid #f1f5f9',
-                          backgroundColor: isSubAlert ? (isUnread ? '#fffbeb' : '#ffffff') : isUnread ? '#f8fafc' : '#ffffff',
+                          backgroundColor: theme.isSubAlert
+                            ? isUnread
+                              ? '#fffbeb'
+                              : '#ffffff'
+                            : isUnread
+                            ? '#f0f7ff'
+                            : '#ffffff',
                           cursor: 'pointer',
                           transition: 'background-color 0.15s ease',
                           display: 'flex',
@@ -780,8 +854,8 @@ export const Header = ({ title, subtitle, isAdmin = false }) => {
                             width: '28px',
                             height: '28px',
                             borderRadius: '8px',
-                            backgroundColor: isSubAlert ? '#fef3c7' : '#eff6ff',
-                            color: isSubAlert ? '#d97706' : '#2563eb',
+                            backgroundColor: theme.bg,
+                            color: theme.color,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -789,7 +863,7 @@ export const Header = ({ title, subtitle, isAdmin = false }) => {
                             marginTop: '2px',
                           }}
                         >
-                          {isSubAlert ? <AlertTriangle size={15} /> : <MessageSquare size={15} />}
+                          {theme.icon}
                         </div>
 
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -797,7 +871,7 @@ export const Header = ({ title, subtitle, isAdmin = false }) => {
                             <strong
                               style={{
                                 fontSize: '12.5px',
-                                color: isSubAlert ? '#b45309' : '#0f172a',
+                                color: theme.isSubAlert ? '#b45309' : isUnread ? '#0f172a' : '#334155',
                                 fontWeight: isUnread ? '700' : '600',
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
@@ -812,7 +886,7 @@ export const Header = ({ title, subtitle, isAdmin = false }) => {
                                   width: '7px',
                                   height: '7px',
                                   borderRadius: '50%',
-                                  backgroundColor: isSubAlert ? '#d97706' : '#2563eb',
+                                  backgroundColor: theme.isSubAlert ? '#d97706' : '#2563eb',
                                   flexShrink: 0,
                                 }}
                               />
@@ -823,7 +897,7 @@ export const Header = ({ title, subtitle, isAdmin = false }) => {
                             style={{
                               margin: '4px 0 0',
                               fontSize: '11.5px',
-                              color: '#475569',
+                              color: isUnread ? '#334155' : '#64748b',
                               lineHeight: 1.4,
                               wordBreak: 'break-word',
                             }}
@@ -845,7 +919,7 @@ export const Header = ({ title, subtitle, isAdmin = false }) => {
                             <span>
                               {formatDateDMY(n.sentAt || n.createdAt)} at {formatTime12h(n.sentAt || n.createdAt)}
                             </span>
-                            {n.channel && <span>• {n.channel}</span>}
+                            {n.type && <span>• {n.type}</span>}
                           </div>
                         </div>
                       </div>

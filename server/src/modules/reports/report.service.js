@@ -225,12 +225,21 @@ export class ReportService {
           const liveStatus = subscriptionService.calculateStatus(currentShop, serverTime);
           subscription = {
             shopId: currentShop._id,
+            id: currentShop._id,
+            _id: currentShop._id,
+            name: currentShop.name,
             plan: currentShop.subscription,
+            subscription: currentShop.subscription,
             startDate: currentShop.subscriptionStartDate,
+            subscriptionStartDate: currentShop.subscriptionStartDate,
             expiresAt: currentShop.subscriptionExpiresAt,
+            subscriptionExpiresAt: currentShop.subscriptionExpiresAt,
             status: liveStatus,
+            subscriptionStatus: liveStatus,
             paymentStatus: currentShop.subscriptionPaymentStatus,
+            subscriptionPaymentStatus: currentShop.subscriptionPaymentStatus,
             billingCycle: currentShop.subscriptionBillingCycle,
+            subscriptionBillingCycle: currentShop.subscriptionBillingCycle,
             daysRemaining,
             serverTime,
           };

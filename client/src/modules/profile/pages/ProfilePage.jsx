@@ -344,8 +344,9 @@ export const ProfilePage = () => {
           const expiresAt = subShop.subscriptionExpiresAt;
           const isExpired = (subShop.calculatedStatus || subShop.subscriptionStatus) === 'EXPIRED' ||
             (expiresAt && new Date(expiresAt).getTime() <= Date.now());
-          const isExpiringSoon = !isExpired && (subShop.calculatedStatus === 'EXPIRING_SOON' || subShop.subscriptionStatus === 'EXPIRING_SOON');
-          const daysRemaining = typeof subShop.daysRemaining === 'number'
+          const daysRemaining = isExpired
+            ? 0
+            : typeof subShop.daysRemaining === 'number'
             ? subShop.daysRemaining
             : calculateRemainingDays(expiresAt);
 
@@ -396,7 +397,7 @@ export const ProfilePage = () => {
                     {isExpired ? 'Expired' : isExpiringSoon ? 'Expiring Soon' : 'Active'}
                   </span>
                   <strong style={{ fontSize: '12px', color: isExpired ? '#dc2626' : daysRemaining <= 7 ? '#d97706' : '#059669' }}>
-                    {isExpired ? '0 days' : `${daysRemaining} days left`}
+                    {isExpired ? '0 days left (Expired)' : `${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} left`}
                   </strong>
                 </div>
               </div>

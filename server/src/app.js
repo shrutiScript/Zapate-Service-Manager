@@ -22,6 +22,7 @@ import { aiRoutes } from './modules/ai/ai.routes.js';
 import { warrantyRoutes } from './modules/warranties/warranty.routes.js';
 import { planRoutes } from './modules/admin/plan.routes.js';
 import { searchRoutes } from './modules/search/search.routes.js';
+import { communityRoutes } from './modules/community/community.routes.js';
 
 import { errorMiddleware } from './middleware/errorMiddleware.js';
 import { notFoundMiddleware } from './middleware/notFoundMiddleware.js';
@@ -104,6 +105,7 @@ export function createApp() {
   v1.use('/warranties', warrantyRoutes);
   v1.use('/plans', planRoutes);
   v1.use('/search', searchRoutes);
+  v1.use('/community', communityRoutes);
 
   app.use('/api/v1', v1);
   app.use('/api', v1);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'wouter';
 import { MainLayout } from '../../../components/layout/MainLayout.jsx';
 import {
   Send,
@@ -39,9 +40,11 @@ export const NotificationCenterPage = () => {
             customer: n.recipientName || n.recipient || 'Customer',
             mobile: n.recipientContact || n.recipientPhone || n.phone || '',
             type: n.channel || n.type || (n.channel === 'WHATSAPP' ? 'WhatsApp' : 'SMS'),
+            rawType: n.type,
             title: n.title || n.subject || 'Automated Alert',
             msg: n.message || n.content || '',
             time: n.sentAt || n.createdAt ? new Date(n.sentAt || n.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Recent',
+            link: n.link || (n.postId ? `/community?post=${n.postId}${n.commentId ? `#comment-${n.commentId}` : ''}` : ''),
           }));
           setLogs(mapped);
         } else {
@@ -176,8 +179,18 @@ export const NotificationCenterPage = () => {
                       width: '36px',
                       height: '36px',
                       borderRadius: 'var(--radius-md)',
-                      background: log.type === 'WhatsApp' ? '#ecfdf5' : '#eff6ff',
-                      color: log.type === 'WhatsApp' ? '#059669' : '#2563eb',
+                      background:
+                        log.type === 'WhatsApp'
+                          ? '#ecfdf5'
+                          : String(log.rawType || '').includes('Community') || log.type === 'In-App'
+                          ? '#f5f3ff'
+                          : '#eff6ff',
+                      color:
+                        log.type === 'WhatsApp'
+                          ? '#059669'
+                          : String(log.rawType || '').includes('Community') || log.type === 'In-App'
+                          ? '#7c3aed'
+                          : '#2563eb',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -186,7 +199,7 @@ export const NotificationCenterPage = () => {
                       flexShrink: 0,
                     }}
                   >
-                    {log.type === 'WhatsApp' ? 'WA' : 'SMS'}
+                    {log.type === 'WhatsApp' ? 'WA' : String(log.rawType || '').includes('Community') ? 'COM' : log.type === 'In-App' ? 'IN' : 'SMS'}
                   </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -210,6 +223,24 @@ export const NotificationCenterPage = () => {
                     <p style={{ fontSize: '12px', color: '#475569', marginTop: '6px', lineHeight: 1.4 }}>
                       {log.msg}
                     </p>
+                    {log.link && (
+                      <div style={{ marginTop: '8px' }}>
+                        <Link
+                          href={log.link}
+                          style={{
+                            fontSize: '11.5px',
+                            color: '#2563eb',
+                            fontWeight: '700',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          View Community Discussion →
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))

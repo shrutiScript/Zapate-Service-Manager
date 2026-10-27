@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MainLayout } from '../../../components/layout/MainLayout.jsx';
 import { KpiCards } from '../../../components/ui/KpiCard/index.js';
 import {
@@ -22,9 +22,11 @@ import {
   BarChart2,
   Clock,
   Sparkles,
+  CornerDownRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../../context/AuthContext.jsx';
+import api from '../../../services/api.js';
 
 /* ─── Seed Data ─────────────────────────────────────── */
 const SEED_POSTS = [
@@ -206,15 +208,23 @@ const SEED_POSTS = [
 ];
 
 /* ─── Post Card Component ───────────────────────────── */
-function PostCard({ post, onLike, onCommentLike, onAddComment, onSave }) {
-  const [expanded, setExpanded] = useState(false);
+function PostCard({ post, onLike, onCommentLike, onAddComment, onSave, isHighlighted = false }) {
+  const [expanded, setExpanded] = useState(isHighlighted);
   const [commentText, setCommentText] = useState('');
+  const [replyTo, setReplyTo] = useState(null);
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (isHighlighted) {
+      setExpanded(true);
+    }
+  }, [isHighlighted]);
 
   const handleSend = () => {
     if (!commentText.trim()) return;
-    onAddComment(post.id, commentText.trim());
+    onAddComment(post.id, commentText.trim(), replyTo?.id);
     setCommentText('');
+    setReplyTo(null);
   };
 
   const handleKeyDown = (e) => {
@@ -225,7 +235,19 @@ function PostCard({ post, onLike, onCommentLike, onAddComment, onSave }) {
   };
 
   return (
-    <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+    <div
+      id={`post-${post.id}`}
+      className="card"
+      style={{
+        padding: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px',
+        border: isHighlighted ? '2px solid #2563eb' : undefined,
+        boxShadow: isHighlighted ? '0 0 0 4px rgba(37, 99, 235, 0.15)' : undefined,
+        transition: 'all 0.3s ease',
+      }}
+    >
       {/* Top Header: Author, Type Badge, Device, Time, Save Button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -381,6 +403,7 @@ function PostCard({ post, onLike, onCommentLike, onAddComment, onSave }) {
             post.comments.map((c) => (
               <div
                 key={c.id}
+                id={`comment-${c.id}`}
                 style={{
                   background: '#ffffff',
                   borderRadius: '8px',
@@ -409,57 +432,118 @@ function PostCard({ post, onLike, onCommentLike, onAddComment, onSave }) {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                    <strong style={{ fontSize: '12px', color: '#0f172a' }}>{c.author}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <strong style={{ fontSize: '12px', color: '#0f172a' }}>{c.author}</strong>
+                      {c.replyToAuthor && (
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>
+                          replying to <strong style={{ color: '#2563eb' }}>@{c.replyToAuthor}</strong>
+                        </span>
+                      )}
+                    </div>
                     <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>{c.time}</span>
                   </div>
                   <p style={{ fontSize: '12.5px', color: '#475569', margin: '0 0 6px', lineHeight: 1.45 }}>
                     {c.text}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => onCommentLike(post.id, c.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      color: c.likedByMe ? '#2563eb' : '#94a3b8',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <ThumbsUp size={11} fill={c.likedByMe ? '#2563eb' : 'none'} />
-                    {c.likes > 0 && c.likes}
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button
+                      type="button"
+                      onClick={() => onCommentLike(post.id, c.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        color: c.likedByMe ? '#2563eb' : '#94a3b8',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <ThumbsUp size={11} fill={c.likedByMe ? '#2563eb' : 'none'} />
+                      {c.likes > 0 && c.likes}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReplyTo(c);
+                        setCommentText(`@${c.author} `);
+                        inputRef.current?.focus();
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        color: '#64748b',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <CornerDownRight size={11} /> Reply
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
           )}
 
           {/* Quick Comment Input */}
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
-            <input
-              ref={inputRef}
-              type="text"
-              className="input-control"
-              placeholder="Write a solution or comment..."
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              style={{ height: '36px', fontSize: '12.5px' }}
-            />
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={handleSend}
-              disabled={!commentText.trim()}
-              style={{ height: '36px', padding: '0 14px' }}
-            >
-              <Send size={13} />
-            </button>
+          <div style={{ marginTop: '4px' }}>
+            {replyTo && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '11px',
+                  color: '#2563eb',
+                  background: '#eff6ff',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  marginBottom: '6px',
+                }}
+              >
+                <span>Replying to <strong>{replyTo.author}</strong></span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReplyTo(null);
+                    setCommentText('');
+                  }}
+                  style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 0 }}
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                ref={inputRef}
+                type="text"
+                className="input-control"
+                placeholder={replyTo ? `Reply to @${replyTo.author}...` : 'Write a solution or comment...'}
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                style={{ height: '36px', fontSize: '12.5px' }}
+              />
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={handleSend}
+                disabled={!commentText.trim()}
+                style={{ height: '36px', padding: '0 14px' }}
+              >
+                <Send size={13} />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -852,11 +936,55 @@ function CommunitySidebar({ posts }) {
 /* ─── Main Page ──────────────────────────────────────── */
 export const CommunityPage = () => {
   const [posts, setPosts] = useState(SEED_POSTS);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
-  const [nextCommentId, setNextCommentId] = useState(700);
-  const [nextPostId, setNextPostId] = useState(10);
+  const [highlightedPostId, setHighlightedPostId] = useState(null);
+
+  const loadPosts = async () => {
+    setIsLoading(true);
+    try {
+      const res = await api.get('/community/posts');
+      if (Array.isArray(res) && res.length > 0) {
+        setPosts(res);
+      } else if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+        setPosts(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to load community posts:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPosts();
+  }, []);
+
+  // Check URL query parameters for target post (e.g. from notification click /community?post=ID)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetPostId = urlParams.get('post');
+    if (targetPostId) {
+      setHighlightedPostId(targetPostId);
+      setTimeout(() => {
+        const hash = window.location.hash;
+        if (hash) {
+          const commentEl = document.querySelector(hash);
+          if (commentEl) {
+            commentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
+        }
+        const postEl = document.getElementById(`post-${targetPostId}`);
+        if (postEl) {
+          postEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 400);
+    }
+  }, [posts]);
 
   const filteredPosts = posts.filter((p) => {
     const matchesFilter =
@@ -876,7 +1004,8 @@ export const CommunityPage = () => {
     return matchesFilter && matchesSearch;
   });
 
-  const handleLike = (postId) => {
+  const handleLike = async (postId) => {
+    // Optimistic UI update
     setPosts((prev) =>
       prev.map((p) =>
         p.id === postId
@@ -884,72 +1013,64 @@ export const CommunityPage = () => {
           : p
       )
     );
+    try {
+      const updatedPost = await api.post(`/community/posts/${postId}/like`);
+      if (updatedPost?.id) {
+        setPosts((prev) => prev.map((p) => (p.id === postId ? updatedPost : p)));
+      }
+    } catch (err) {
+      console.error('Failed to like post:', err);
+    }
   };
 
-  const handleSave = (postId) => {
-    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, saved: !p.saved } : p)));
-    const post = posts.find((p) => p.id === postId);
-    if (post) toast.success(post.saved ? 'Removed from saved' : 'Discussion saved to your bookmarks! 🔖');
+  const handleSave = async (postId) => {
+    try {
+      const updatedPost = await api.post(`/community/posts/${postId}/save`);
+      if (updatedPost?.id) {
+        setPosts((prev) => prev.map((p) => (p.id === postId ? updatedPost : p)));
+        toast.success(updatedPost.saved ? 'Discussion saved to your bookmarks! 🔖' : 'Removed from saved');
+      }
+    } catch (err) {
+      console.error('Failed to save post:', err);
+    }
   };
 
-  const handleCommentLike = (postId, commentId) => {
-    setPosts((prev) =>
-      prev.map((p) => {
-        if (p.id !== postId) return p;
-        return {
-          ...p,
-          comments: p.comments.map((c) =>
-            c.id === commentId
-              ? { ...c, likedByMe: !c.likedByMe, likes: c.likedByMe ? c.likes - 1 : c.likes + 1 }
-              : c
-          ),
-        };
-      })
-    );
+  const handleCommentLike = async (postId, commentId) => {
+    try {
+      const updatedPost = await api.post(`/community/posts/${postId}/comments/${commentId}/like`);
+      if (updatedPost?.id) {
+        setPosts((prev) => prev.map((p) => (p.id === postId ? updatedPost : p)));
+      }
+    } catch (err) {
+      console.error('Failed to like comment:', err);
+    }
   };
 
-  const { user, currentShop } = useAuth();
-  const activeAuthor = currentShop?.name || user?.shopName || user?.name || 'Technician';
-  const activeInitials = (activeAuthor || 'TE').slice(0, 2).toUpperCase();
-
-  const handleAddComment = (postId, text) => {
-    const newComment = {
-      id: nextCommentId,
-      author: activeAuthor,
-      initials: activeInitials,
-      avatarColor: '#2563eb',
-      text,
-      likes: 0,
-      likedByMe: false,
-      time: 'just now',
-    };
-    setNextCommentId((n) => n + 1);
-    setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, comments: [...p.comments, newComment] } : p))
-    );
-    toast.success('Your reply has been posted!');
+  const handleAddComment = async (postId, text, replyToCommentId = null) => {
+    try {
+      const updatedPost = await api.post(`/community/posts/${postId}/comments`, {
+        text,
+        replyToCommentId,
+      });
+      if (updatedPost?.id) {
+        setPosts((prev) => prev.map((p) => (p.id === postId ? updatedPost : p)));
+        toast.success('Your reply has been posted!');
+      }
+    } catch (err) {
+      toast.error('Failed to post reply');
+    }
   };
 
-  const handleNewPost = (form) => {
-    const COLORS = ['#2563eb', '#10b981', '#7c3aed', '#f59e0b', '#0284c7', '#ea580c'];
-    const newPost = {
-      id: nextPostId,
-      type: form.type,
-      author: activeAuthor,
-      initials: activeInitials,
-      avatarColor: COLORS[nextPostId % COLORS.length],
-      device: form.device.trim() || 'General Device',
-      title: form.title.trim(),
-      body: form.body.trim(),
-      likes: 0,
-      likedByMe: false,
-      saved: false,
-      createdAt: 'just now',
-      comments: [],
-    };
-    setNextPostId((n) => n + 1);
-    setPosts((prev) => [newPost, ...prev]);
-    toast.success('Your discussion is live in the community! 🎉');
+  const handleNewPost = async (form) => {
+    try {
+      const createdPost = await api.post('/community/posts', form);
+      if (createdPost?.id) {
+        setPosts((prev) => [createdPost, ...prev]);
+        toast.success('Your discussion is live in the community! 🎉');
+      }
+    } catch (err) {
+      toast.error('Failed to publish discussion');
+    }
   };
 
   return (
@@ -1151,6 +1272,7 @@ export const CommunityPage = () => {
                 onSave={handleSave}
                 onCommentLike={handleCommentLike}
                 onAddComment={handleAddComment}
+                isHighlighted={String(post.id) === String(highlightedPostId)}
               />
             ))
           )}

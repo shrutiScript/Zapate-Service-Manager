@@ -641,7 +641,9 @@ export const SettingsPage = () => {
                   const isExpired = (subShop.calculatedStatus || subShop.subscriptionStatus) === 'EXPIRED' ||
                     (expiresAt && new Date(expiresAt).getTime() <= new Date(serverTime).getTime());
                   const isExpiringSoon = !isExpired && (subShop.calculatedStatus === 'EXPIRING_SOON' || subShop.subscriptionStatus === 'EXPIRING_SOON');
-                  const daysRemaining = typeof subShop.daysRemaining === 'number'
+                  const daysRemaining = isExpired
+                    ? 0
+                    : typeof subShop.daysRemaining === 'number'
                     ? subShop.daysRemaining
                     : calculateRemainingDays(expiresAt, serverTime);
 
@@ -738,7 +740,7 @@ export const SettingsPage = () => {
                               color: isExpired ? '#dc2626' : daysRemaining <= 7 ? '#d97706' : '#059669',
                             }}
                           >
-                            {isExpired ? '0 days left' : `${daysRemaining} days left`}
+                            {isExpired ? '0 days left (Expired)' : `${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} left`}
                           </strong>
                         </div>
                         <div style={{ fontSize: '11px', color: isExpired ? '#b91c1c' : '#64748b', marginTop: '2px' }}>

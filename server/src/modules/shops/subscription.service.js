@@ -1,4 +1,5 @@
 import { Shop } from './shop.model.js';
+import { User } from '../users/user.model.js';
 import { Plan } from '../admin/plan.model.js';
 import { auditLogService } from '../admin/auditLog.service.js';
 import { Notification } from '../notifications/notification.model.js';
@@ -482,6 +483,7 @@ export class SubscriptionService {
     shop.subscriptionStatus = 'ACTIVE';
     shop.subscriptionPaymentStatus = 'PAID';
     shop.sessionInvalidatedAt = null; // Clear session block
+    await User.updateMany({ shopId: shop._id }, { sessionInvalidatedAt: null });
 
     // Reset notification tracker for the new validity period
     shop.subscriptionNotificationsSent = [];
@@ -607,6 +609,7 @@ export class SubscriptionService {
     // If newly extended expiry is in the future, unblock session
     if (newExpiresAt.getTime() > now.getTime()) {
       shop.sessionInvalidatedAt = null;
+      await User.updateMany({ shopId: shop._id }, { sessionInvalidatedAt: null });
     }
 
     // Reset notification tracker for newly extended date

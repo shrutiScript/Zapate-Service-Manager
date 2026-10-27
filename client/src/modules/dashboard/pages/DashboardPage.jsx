@@ -624,12 +624,35 @@ export const DashboardPage = () => {
         {/* 1.5 SUBSCRIPTION COUNTDOWN & EXPIRY STATUS BAR             */}
         {/* ========================================================= */}
         {(() => {
-          const activeShop = stats.subscription || currentShop || user?.shop;
-          if (!activeShop || !activeShop.subscriptionExpiresAt) return null;
+          const baseShop = currentShop || user?.shop || {};
+          const subData = stats?.subscription || {};
+
+          // Merge base shop and live subscription payload so neither dates nor properties are dropped
+          const activeShop = {
+            ...baseShop,
+            ...subData,
+            _id: baseShop._id || baseShop.id || subData._id || subData.shopId || subData.id,
+            id: baseShop.id || baseShop._id || subData.id || subData._id || subData.shopId,
+            name: baseShop.name || subData.name || user?.shopName || 'Workshop',
+            subscription: subData.subscription || subData.plan || baseShop.subscription || 'Workshop Plan',
+            plan: subData.plan || subData.subscription || baseShop.subscription || 'Workshop Plan',
+            subscriptionStartDate: subData.subscriptionStartDate || subData.startDate || baseShop.subscriptionStartDate,
+            startDate: subData.startDate || subData.subscriptionStartDate || baseShop.subscriptionStartDate,
+            subscriptionExpiresAt: subData.subscriptionExpiresAt || subData.expiresAt || baseShop.subscriptionExpiresAt,
+            expiresAt: subData.expiresAt || subData.subscriptionExpiresAt || baseShop.subscriptionExpiresAt,
+            subscriptionStatus: subData.subscriptionStatus || subData.status || baseShop.subscriptionStatus || 'ACTIVE',
+            status: subData.status || subData.subscriptionStatus || baseShop.subscriptionStatus || 'ACTIVE',
+            subscriptionBillingCycle: subData.subscriptionBillingCycle || subData.billingCycle || baseShop.subscriptionBillingCycle || 'monthly',
+            daysRemaining: typeof subData.daysRemaining === 'number' ? subData.daysRemaining : baseShop.daysRemaining,
+          };
+
+          const expiryTimestamp = activeShop.subscriptionExpiresAt || activeShop.expiresAt;
+          if (!expiryTimestamp) return null;
+
           return (
             <SubscriptionCountdownBar
               shop={activeShop}
-              serverTime={stats.serverTime || activeShop.serverTime}
+              serverTime={stats.serverTime || subData.serverTime || activeShop.serverTime}
               onRenewSuccess={(renewRes) => {
                 if (renewRes?.shop) {
                   updateCurrentShop(renewRes.shop);
