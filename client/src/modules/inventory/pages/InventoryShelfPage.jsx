@@ -22,6 +22,7 @@ import {
   User,
   CheckCircle2,
   ArrowRight,
+  ChevronRight,
   X,
   Filter,
   BarChart3,
@@ -31,6 +32,8 @@ import {
 import { useApp } from '../../../context/AppContext.jsx';
 import { toast } from 'sonner';
 import api from '../../../services/api.js';
+
+import { SPARE_CATEGORIES } from '../constants/categories.js';
 
 export const InventoryShelfPage = () => {
   const { searchQuery: globalSearchQuery, setSearchQuery: setGlobalSearchQuery } = useApp();
@@ -405,6 +408,26 @@ export const InventoryShelfPage = () => {
     if (qty <= minQty) return { pct, color: '#ef4444', bg: '#fef2f2' };
     if (qty <= minQty * 2) return { pct, color: '#f59e0b', bg: '#fffbeb' };
     return { pct, color: '#10b981', bg: '#ecfdf5' };
+  };
+
+  // Accurate Category SKU count calculation from database parts
+  const getCategorySkuCount = (cat) => {
+    return parts.filter((p) => {
+      const pCat = (p.category || '').toLowerCase().trim();
+      const pName = (p.name || '').toLowerCase().trim();
+      return (
+        pCat === cat.name.toLowerCase() ||
+        pCat === cat.shortName.toLowerCase() ||
+        cat.matchTerms.some((term) => pCat.includes(term) || pName.includes(term))
+      );
+    }).length;
+  };
+
+  // Category card navigation / filtering
+  const handleCategoryClick = (cat) => {
+    handleSearchChange(cat.searchKeyword || cat.shortName || cat.name);
+    setActiveTab('stock');
+    toast.info(`Filtering inventory by "${cat.name}"`);
   };
 
   // Tab definitions
@@ -895,42 +918,56 @@ export const InventoryShelfPage = () => {
       {/* TAB 2: CATEGORIES                                             */}
       {/* ============================================================ */}
       {activeTab === 'categories' && (
-        <div className="card" style={{ padding: '28px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '20px' }}>Spare Parts Categories</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
-            {['Screens & LCD Displays', 'Batteries', 'Charging Ports & Flex Cable', 'Camera Modules', 'Back Glass & Housing', 'IC Chips & Board Components', 'Speakers & Microphones', 'Tools & Consumables'].map((cat, idx) => {
-              const catParts = parts.filter((p) => (p.category || '').toLowerCase().includes(cat.split(' ')[0].toLowerCase()));
-              const catColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
+        <div className="spare-categories-container">
+          {/* Section Heading with Blue Vertical Accent Pill */}
+          <div className="spare-categories-heading">
+            <span className="spare-categories-accent-bar" />
+            <h2 className="spare-categories-title">Spare Parts Categories</h2>
+          </div>
+
+          {/* 4-per-row Responsive Grid */}
+          <div className="spare-categories-grid">
+            {SPARE_CATEGORIES.map((cat) => {
+              const skuCount = getCategorySkuCount(cat);
               return (
-                <div key={idx} style={{
-                  padding: '18px 20px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--border-color)',
-                  background: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  transition: 'all 0.15s ease',
-                  cursor: 'default',
-                }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '10px',
-                    background: `${catColors[idx]}12`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    <Layers size={18} style={{ color: catColors[idx] }} />
+                <div
+                  key={cat.id}
+                  className="spare-category-card"
+                  onClick={() => handleCategoryClick(cat)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleCategoryClick(cat);
+                    }
+                  }}
+                  title={`Click to filter inventory by ${cat.name}`}
+                >
+                  {/* Rounded-Square Image Container with Soft Pastel Background */}
+                  <div
+                    className="spare-category-thumb"
+                    style={{ backgroundColor: cat.bgColor }}
+                  >
+                    <img
+                      src={cat.image}
+                      alt={cat.name}
+                      className="spare-category-img"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
                   </div>
-                  <div>
-                    <strong style={{ fontSize: '13.5px', color: '#0f172a', display: 'block', lineHeight: 1.3 }}>{cat}</strong>
-                    <span style={{ fontSize: '12px', color: '#64748b', marginTop: '3px', display: 'block' }}>
-                      {catParts.length} SKUs registered
-                    </span>
+
+                  {/* Category Details */}
+                  <div className="spare-category-info">
+                    <h4 className="spare-category-name">{cat.name}</h4>
+                    <p className="spare-category-skus">{skuCount} SKUs registered</p>
                   </div>
+
+                  {/* Right-Facing Chevron */}
+                  <ChevronRight size={18} className="spare-category-chevron" />
                 </div>
               );
             })}
@@ -1219,6 +1256,26 @@ export const InventoryShelfPage = () => {
                 </div>
               </div>
 
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                <div className="form-group">
+                  <label className="form-label">Category *</label>
+                  <select
+                    className="input-control"
+                    value={newPart.category}
+                    onChange={(e) => setNewPart({ ...newPart, category: e.target.value })}
+                    required
+                  >
+                    {SPARE_CATEGORIES.map((c) => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Shelf / Rack Location</label>
+                  <input type="text" className="input-control" placeholder="Rack A-1" value={newPart.rack} onChange={(e) => setNewPart({ ...newPart, rack: e.target.value })} />
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px', marginBottom: '22px' }}>
                 <div className="form-group">
                   <label className="form-label">Initial Qty</label>
@@ -1278,6 +1335,26 @@ export const InventoryShelfPage = () => {
                 <div className="form-group">
                   <label className="form-label">Compatible Model</label>
                   <input type="text" className="input-control" value={editPart.model} onChange={(e) => setEditPart({ ...editPart, model: e.target.value })} />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                <div className="form-group">
+                  <label className="form-label">Category *</label>
+                  <select
+                    className="input-control"
+                    value={editPart.category}
+                    onChange={(e) => setEditPart({ ...editPart, category: e.target.value })}
+                    required
+                  >
+                    {SPARE_CATEGORIES.map((c) => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Shelf / Rack Location</label>
+                  <input type="text" className="input-control" value={editPart.rack} onChange={(e) => setEditPart({ ...editPart, rack: e.target.value })} />
                 </div>
               </div>
 
