@@ -32,4 +32,13 @@ export class ReportController {
       next(err);
     }
   }
+
+  async getCalendarDates(req, res, next) {
+    try {
+      const result = await reportService.getActiveCalendarDates(req.shopId, req.role, req.query);
+      return sendSuccess(res, result);
+    } catch (err) {
+      next(err);
+    }
+  }
 }

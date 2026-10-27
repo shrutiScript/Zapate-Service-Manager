@@ -10,6 +10,7 @@ router.use(authMiddleware);
 
 router.get('/dashboard', controller.getDashboardStats);
 router.get('/dashboard-stats', controller.getDashboardStats);
+router.get('/calendar-dates', controller.getCalendarDates);
 router.get('/analytics', requireModule('reports'), controller.getAnalytics);
 router.get('/', requireModule('reports'), controller.getReports);
 

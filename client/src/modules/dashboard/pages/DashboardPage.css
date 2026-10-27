@@ -217,6 +217,7 @@
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -281,41 +282,64 @@
 
 .calendar-day-cell {
   aspect-ratio: 1;
+  width: 100%;
+  max-width: 34px;
+  max-height: 34px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 50%;
   font-size: 12px;
   font-weight: 600;
   color: #334155;
   background: transparent;
-  border: none;
+  border: 1.5px solid transparent;
   cursor: pointer;
   position: relative;
-  transition: all 0.12s ease;
+  transition: all 0.15s ease;
   user-select: none;
+  box-sizing: border-box;
 }
 
 .calendar-day-cell.is-outside {
   color: #cbd5e1;
   cursor: default;
+  border-color: transparent !important;
 }
 
-.calendar-day-cell.is-current-month:hover {
+.calendar-day-cell.is-current-month:hover:not(.is-selected) {
   background: #f1f5f9;
   color: #0f172a;
 }
 
-.calendar-day-cell.is-today {
+/* Single border color thin circular outline for dates with database records */
+.calendar-day-cell.has-data {
+  border-color: #2563eb;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.calendar-day-cell.has-data:hover:not(.is-selected) {
+  background: #eff6ff;
+  border-color: #1d4ed8;
+}
+
+.calendar-day-cell.is-today:not(.is-selected) {
   color: #2563eb;
   font-weight: 700;
   background: #eff6ff;
 }
 
+.calendar-day-cell.is-today.has-data:not(.is-selected) {
+  border-color: #2563eb;
+}
+
 .calendar-day-cell.is-selected {
   background: #2563eb !important;
   color: #ffffff !important;
+  border-color: #2563eb !important;
   font-weight: 800;
   box-shadow: 0 3px 8px rgba(37, 99, 235, 0.35);
 }
@@ -689,42 +713,60 @@
   color: #059669;
   border: 1px solid #a7f3d0;
 }
-.badge-delivered .badge-dot { background: #059669; }
+
+.badge-delivered .badge-dot {
+  background: #059669;
+}
 
 .badge-ready {
   background: #f0fdfa;
   color: #0d9488;
   border: 1px solid #99f6e4;
 }
-.badge-ready .badge-dot { background: #0d9488; }
+
+.badge-ready .badge-dot {
+  background: #0d9488;
+}
 
 .badge-progress {
   background: #fffbeb;
   color: #b45309;
   border: 1px solid #fde68a;
 }
-.badge-progress .badge-dot { background: #b45309; }
+
+.badge-progress .badge-dot {
+  background: #b45309;
+}
 
 .badge-parts {
   background: #fef2f2;
   color: #b91c1c;
   border: 1px solid #fecaca;
 }
-.badge-parts .badge-dot { background: #b91c1c; }
+
+.badge-parts .badge-dot {
+  background: #b91c1c;
+}
 
 .badge-received {
   background: #eff6ff;
   color: #1d4ed8;
   border: 1px solid #bfdbfe;
 }
-.badge-received .badge-dot { background: #1d4ed8; }
+
+.badge-received .badge-dot {
+  background: #1d4ed8;
+}
 
 .badge-diagnosis {
   background: #faf5ff;
   color: #7e22ce;
   border: 1px solid #e9d5ff;
 }
-.badge-diagnosis .badge-dot { background: #7e22ce; }
+
+.badge-diagnosis .badge-dot {
+  background: #7e22ce;
+}
 
 /* Table Action View Button */
 .table-view-btn {

@@ -65,6 +65,9 @@ export const DashboardPage = () => {
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
 
+  // Set of YYYY-MM-DD date strings that have relevant workshop records in database
+  const [activeCalendarDates, setActiveCalendarDates] = useState(() => new Set());
+
   // Strict zero-based default state for workshop isolation
   const [stats, setStats] = useState({
     todaySales: 0,
@@ -117,6 +120,34 @@ export const DashboardPage = () => {
       setViewMonth(m - 1);
     }
   }, [selectedDate]);
+
+  // Fetch real date availability with workshop records for the displayed month
+  useEffect(() => {
+    let isMounted = true;
+    const tzOffset = new Date().getTimezoneOffset();
+
+    api
+      .get(`/reports/calendar-dates?year=${viewYear}&month=${viewMonth + 1}&timezoneOffset=${tzOffset}`)
+      .then((res) => {
+        if (!isMounted) return;
+        const datesArray = Array.isArray(res?.activeDates)
+          ? res.activeDates
+          : Array.isArray(res?.data?.activeDates)
+          ? res.data.activeDates
+          : Array.isArray(res)
+          ? res
+          : [];
+        setActiveCalendarDates(new Set(datesArray));
+      })
+      .catch((err) => {
+        console.error('Failed to fetch calendar active dates:', err);
+        if (isMounted) setActiveCalendarDates(new Set());
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [viewYear, viewMonth, selectedDate]);
 
   const isToday = selectedDate === getTodayDateString();
 
@@ -411,7 +442,7 @@ export const DashboardPage = () => {
   return (
     <MainLayout title="Dashboard" subtitle="Workshop Operations Overview">
       <div className="dashboard-container">
-        
+
         {/* ========================================================= */}
         {/* 1. GREETING & INTAKE BAR                                  */}
         {/* ========================================================= */}
@@ -528,16 +559,19 @@ export const DashboardPage = () => {
                       const cellDateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
                       const isSelected = cellDateStr === selectedDate;
                       const isCellToday = cellDateStr === getTodayDateString();
+                      const hasData = activeCalendarDates.has(cellDateStr);
 
                       return (
                         <button
                           key={cellDateStr}
                           type="button"
-                          className={`calendar-day-cell is-current-month ${isSelected ? 'is-selected' : ''} ${isCellToday ? 'is-today' : ''}`}
+                          className={`calendar-day-cell is-current-month ${isSelected ? 'is-selected' : ''} ${isCellToday ? 'is-today' : ''} ${hasData ? 'has-data' : ''}`}
                           onClick={() => {
                             setSelectedDate(cellDateStr);
                             setIsCalendarOpen(false);
                           }}
+                          title={hasData ? `${cellDateStr} (Contains workshop records)` : cellDateStr}
+                          aria-label={`${cellDateStr}${hasData ? ', has records' : ''}${isSelected ? ', selected' : ''}${isCellToday ? ', today' : ''}`}
                         >
                           {dayNum}
                           {isCellToday && !isSelected && <span className="today-dot" />}

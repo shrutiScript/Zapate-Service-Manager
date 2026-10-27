@@ -516,4 +516,124 @@ export class ReportService {
       hasData: allInvoices.length > 0 || allRepairs.length > 0,
     };
   }
+
+  async getActiveCalendarDates(shopId = null, role = null, options = {}) {
+    let filter = {};
+    if (shopId) {
+      filter = { shopId };
+    } else if (role !== 'SUPER_ADMIN') {
+      filter = { shopId: '000000000000000000000000' };
+    }
+
+    let year = Number(options?.year);
+    let month = Number(options?.month); // 1-12
+
+    let offset = -330;
+    if (options?.timezoneOffset !== undefined && options?.timezoneOffset !== null && options?.timezoneOffset !== '') {
+      const parsed = parseInt(options.timezoneOffset, 10);
+      if (!isNaN(parsed)) {
+        offset = parsed;
+      }
+    }
+
+    if (!year || isNaN(year) || !month || isNaN(month) || month < 1 || month > 12) {
+      const now = new Date();
+      const localMs = now.getTime() - offset * 60 * 1000;
+      const localDate = new Date(localMs);
+      year = localDate.getUTCFullYear();
+      month = localDate.getUTCMonth() + 1;
+    }
+
+    // Include 7 days buffer before and after the month to cover visible calendar grid cells
+    const lastDayOfMonth = new Date(year, month, 0).getDate();
+    const rangeStart = new Date(Date.UTC(year, month - 1, 1 - 7, 0, 0, 0, 0) + offset * 60 * 1000);
+    const rangeEnd = new Date(Date.UTC(year, month - 1, lastDayOfMonth + 7, 23, 59, 59, 999) + offset * 60 * 1000);
+
+    const dateFilter = { $gte: rangeStart, $lte: rangeEnd };
+
+    const toDateStrInTz = (date) => {
+      if (!date) return null;
+      const localMs = new Date(date).getTime() - offset * 60 * 1000;
+      const localDate = new Date(localMs);
+      const y = localDate.getUTCFullYear();
+      const mo = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(localDate.getUTCDate()).padStart(2, '0');
+      return `${y}-${mo}-${d}`;
+    };
+
+    const [
+      repairsDocs,
+      invoicesDocs,
+      paymentsDocs,
+      ledgerDocs,
+      customersDocs,
+      purchasesDocs,
+      usedMobilesDocs,
+    ] = await Promise.all([
+      Repair.find({
+        ...filter,
+        $or: [{ createdAt: dateFilter }, { updatedAt: dateFilter }],
+      }, { createdAt: 1, updatedAt: 1 }).lean(),
+
+      Invoice.find({
+        ...filter,
+        createdAt: dateFilter,
+      }, { createdAt: 1 }).lean(),
+
+      Payment.find({
+        ...filter,
+        $or: [{ paymentDate: dateFilter }, { createdAt: dateFilter }],
+      }, { paymentDate: 1, createdAt: 1 }).lean(),
+
+      PaymentLedger.find({
+        ...filter,
+        createdAt: dateFilter,
+      }, { createdAt: 1 }).lean(),
+
+      Customer.find({
+        ...filter,
+        createdAt: dateFilter,
+      }, { createdAt: 1 }).lean(),
+
+      Purchase.find({
+        ...filter,
+        createdAt: dateFilter,
+      }, { createdAt: 1 }).lean(),
+
+      UsedMobile.find({
+        ...filter,
+        createdAt: dateFilter,
+      }, { createdAt: 1 }).lean(),
+    ]);
+
+    const datesSet = new Set();
+    const addDate = (d) => {
+      const s = toDateStrInTz(d);
+      if (s) datesSet.add(s);
+    };
+
+    repairsDocs.forEach((r) => {
+      addDate(r.createdAt);
+      addDate(r.updatedAt);
+    });
+
+    invoicesDocs.forEach((i) => addDate(i.createdAt));
+
+    paymentsDocs.forEach((p) => {
+      addDate(p.paymentDate || p.createdAt);
+    });
+
+    ledgerDocs.forEach((l) => addDate(l.createdAt));
+    customersDocs.forEach((c) => addDate(c.createdAt));
+    purchasesDocs.forEach((p) => addDate(p.createdAt));
+    usedMobilesDocs.forEach((u) => addDate(u.createdAt));
+
+    const activeDates = Array.from(datesSet).sort();
+
+    return {
+      year,
+      month,
+      activeDates,
+    };
+  }
 }
