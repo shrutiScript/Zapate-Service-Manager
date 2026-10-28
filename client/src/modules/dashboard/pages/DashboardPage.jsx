@@ -94,6 +94,9 @@ export const DashboardPage = () => {
   });
 
   const [jobs, setJobs] = useState([]);
+  const [queueTab, setQueueTab] = useState('active');
+  const [activeQueueJobs, setActiveQueueJobs] = useState([]);
+  const [todayIntakeJobs, setTodayIntakeJobs] = useState([]);
   const [pipelineFilter, setPipelineFilter] = useState('This Month');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -295,12 +298,12 @@ export const DashboardPage = () => {
         console.error('Failed to load dashboard stats:', err);
       });
 
-    // 2. Fetch live repairs strictly for current workshop & selected date
-    const repairsReq = api.get(`/repairs?date=${selectedDate}&timezoneOffset=${tzOffset}`)
+    // 2. Fetch live repairs for current workshop
+    const repairsReq = api.get('/repairs')
       .then((res) => {
         if (!isMounted) return;
         if (Array.isArray(res) && res.length > 0) {
-          const mapped = res.map((r) => {
+          const mapJob = (r) => {
             const cust = (typeof r.customer === 'object' ? r.customer?.name : r.customerName) || 'Walk-in Client';
             const dev = cleanDeviceName(
               typeof r.device === 'object' ? r.device?.brand : '',
@@ -317,15 +320,36 @@ export const DashboardPage = () => {
               device: dev,
               stage: r.status || 'Received',
               amount: amt,
+              createdAt: r.createdAt,
             };
+          };
+
+          const mappedAll = res.map(mapJob);
+
+          // 1. Active repairs in workshop queue (not delivered, cancelled, or returned)
+          const activeList = mappedAll.filter((r) =>
+            !['Delivered', 'Completed', 'Cancelled', 'Returned Unrepaired'].includes(r.stage)
+          );
+          setActiveQueueJobs(activeList.slice(0, 8));
+
+          // 2. Repairs logged on the selected date
+          const dateList = mappedAll.filter((r) => {
+            if (!r.createdAt) return false;
+            const localMs = new Date(r.createdAt).getTime() - tzOffset * 60 * 1000;
+            const dStr = new Date(localMs).toISOString().slice(0, 10);
+            return dStr === selectedDate;
           });
-          setJobs(mapped.slice(0, 8));
+          setTodayIntakeJobs(dateList.slice(0, 8));
         } else {
-          setJobs([]);
+          setActiveQueueJobs([]);
+          setTodayIntakeJobs([]);
         }
       })
       .catch(() => {
-        if (isMounted) setJobs([]);
+        if (isMounted) {
+          setActiveQueueJobs([]);
+          setTodayIntakeJobs([]);
+        }
       });
 
     Promise.allSettled([reportsReq, repairsReq]).finally(() => {
@@ -438,6 +462,12 @@ export const DashboardPage = () => {
     if (!totalPipelineTickets || totalPipelineTickets <= 0) return '0%';
     return `${Math.min(100, Math.round(((count || 0) / totalPipelineTickets) * 100))}%`;
   };
+
+  const displayJobs = !isToday
+    ? todayIntakeJobs
+    : queueTab === 'active'
+    ? (activeQueueJobs.length > 0 ? activeQueueJobs : todayIntakeJobs)
+    : todayIntakeJobs;
 
   return (
     <MainLayout title="Dashboard" subtitle="Workshop Operations Overview">
@@ -740,22 +770,66 @@ export const DashboardPage = () => {
           {/* Left: Live Work Orders Queue */}
           <div className="dashboard-card dashboard-card-balanced">
             <div>
-              <div className="dashboard-card-header">
+              <div className="dashboard-card-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
                 <div className="dashboard-card-title-group">
                   <h2>Live Work Orders Queue</h2>
                   <p>
                     {isToday
-                      ? 'Real-time ticket progression & parts status'
+                      ? (queueTab === 'active' && activeQueueJobs.length > 0
+                          ? 'Active workshop orders in progress or waiting'
+                          : 'Repair tickets recorded today')
                       : `Repair tickets recorded on ${formattedSelectedDDMMYYYY}`}
                   </p>
                 </div>
-                <Link href="/repairs" className="dashboard-link-action">
-                  <span>View All Jobs</span>
-                  <ArrowRight size={14} />
-                </Link>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  {isToday && (
+                    <div style={{ display: 'inline-flex', background: '#f1f5f9', padding: '3px', borderRadius: '8px', gap: '3px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setQueueTab('active')}
+                        style={{
+                          padding: '4px 10px',
+                          fontSize: '11.5px',
+                          fontWeight: '700',
+                          borderRadius: '6px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: queueTab === 'active' ? '#ffffff' : 'transparent',
+                          color: queueTab === 'active' ? '#2563eb' : '#64748b',
+                          boxShadow: queueTab === 'active' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        Active Queue ({activeQueueJobs.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQueueTab('today')}
+                        style={{
+                          padding: '4px 10px',
+                          fontSize: '11.5px',
+                          fontWeight: '700',
+                          borderRadius: '6px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: queueTab === 'today' ? '#ffffff' : 'transparent',
+                          color: queueTab === 'today' ? '#2563eb' : '#64748b',
+                          boxShadow: queueTab === 'today' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        Today's Intake ({todayIntakeJobs.length})
+                      </button>
+                    </div>
+                  )}
+                  <Link href="/repairs" className="dashboard-link-action">
+                    <span>View All Jobs</span>
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
               </div>
 
-              {jobs.length === 0 ? (
+              {displayJobs.length === 0 ? (
                 <div className="dashboard-empty-card">
                   <div className="dashboard-empty-icon">
                     <Wrench size={22} />
@@ -763,11 +837,15 @@ export const DashboardPage = () => {
                   <h4 className="dashboard-empty-title">
                     {isLoading
                       ? 'Loading repair jobs...'
+                      : isToday && queueTab === 'active'
+                      ? 'No active repairs in queue'
                       : `No repair jobs recorded on ${formattedSelectedDDMMYYYY}`}
                   </h4>
                   <p className="dashboard-empty-desc">
                     {isToday
-                      ? 'Create your first repair ticket for today to track customer devices.'
+                      ? (queueTab === 'active'
+                          ? 'All workshop repair tickets are completed and delivered.'
+                          : 'Create your first repair ticket for today to track customer devices.')
                       : `No tickets were logged on ${formattedSelectedDDMMYYYY}. Try selecting another date or return to today.`}
                   </p>
                   {!isToday ? (
@@ -801,7 +879,7 @@ export const DashboardPage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {jobs.map((job) => (
+                      {displayJobs.map((job) => (
                         <tr key={job.id || job.jobNo} className="dashboard-table-row">
                           <td>
                             <Link href="/repairs" style={{ textDecoration: 'none' }}>
@@ -852,7 +930,13 @@ export const DashboardPage = () => {
             </div>
 
             <div className="dashboard-card-footer">
-              <span>Showing {jobs.length} workshop {jobs.length === 1 ? 'ticket' : 'tickets'} on {formattedSelectedDDMMYYYY}</span>
+              <span>
+                {isToday
+                  ? (queueTab === 'active' && activeQueueJobs.length > 0
+                      ? `Showing ${displayJobs.length} active workshop ${displayJobs.length === 1 ? 'order' : 'orders'} in queue`
+                      : `Showing ${displayJobs.length} workshop ${displayJobs.length === 1 ? 'ticket' : 'tickets'} on ${formattedSelectedDDMMYYYY}`)
+                  : `Showing ${displayJobs.length} workshop ${displayJobs.length === 1 ? 'ticket' : 'tickets'} on ${formattedSelectedDDMMYYYY}`}
+              </span>
               <Link href="/repairs" className="dashboard-link-action" style={{ fontSize: '11.5px' }}>
                 Manage All Tickets →
               </Link>
@@ -1038,7 +1122,9 @@ export const DashboardPage = () => {
                 <div className="dashboard-card-title-group">
                   <h2>Recent Payments</h2>
                   <p>
-                    {isToday
+                    {isToday && stats.recentPayments.some((p) => p.isRecentFallback)
+                      ? 'Latest workshop transactions & payment ledger'
+                      : isToday
                       ? 'Latest transaction ledger and payment modes'
                       : `Transactions recorded on ${formattedSelectedDDMMYYYY}`}
                   </p>
@@ -1109,7 +1195,11 @@ export const DashboardPage = () => {
             </div>
 
             <div className="dashboard-card-footer">
-              <span>Showing {stats.recentPayments.length} transactions on {formattedSelectedDDMMYYYY}</span>
+              <span>
+                {stats.recentPayments.some((p) => p.isRecentFallback)
+                  ? `Showing latest ${stats.recentPayments.length} transactions (${formattedSelectedDDMMYYYY} has 0)`
+                  : `Showing ${stats.recentPayments.length} transactions on ${formattedSelectedDDMMYYYY}`}
+              </span>
               <Link href="/payments" className="dashboard-link-action" style={{ fontSize: '11.5px' }}>
                 View Full Ledger →
               </Link>
@@ -1143,19 +1233,19 @@ export const DashboardPage = () => {
                 </div>
               ) : (
                 <div className="dashboard-table-container">
-                  <table className="dashboard-table">
+                  <table className="dashboard-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr>
-                        <th>PART NAME</th>
-                        <th style={{ textAlign: 'center' }}>CURRENT</th>
-                        <th style={{ textAlign: 'right' }}>THRESHOLD</th>
+                        <th style={{ width: '52%' }}>PART NAME</th>
+                        <th style={{ width: '24%', textAlign: 'center' }}>STOCK</th>
+                        <th style={{ width: '24%', textAlign: 'center' }}>MIN</th>
                       </tr>
                     </thead>
                     <tbody>
                       {stats.lowStockList.map((item, idx) => (
                         <tr key={idx} className="dashboard-table-row">
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                               <div
                                 style={{
                                   width: '24px',
@@ -1166,22 +1256,48 @@ export const DashboardPage = () => {
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
+                                  flexShrink: 0,
                                 }}
                               >
                                 {getPartIcon(item.category || item.name)}
                               </div>
-                              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>
+                              <span
+                                style={{
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  color: '#0f172a',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                                title={item.name}
+                              >
                                 {item.name}
                               </span>
                             </div>
                           </td>
                           <td style={{ textAlign: 'center' }}>
-                            <span style={{ fontSize: '12px', fontWeight: '800', color: '#dc2626', fontFamily: 'JetBrains Mono, monospace' }}>
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minWidth: '28px',
+                                padding: '2px 7px',
+                                borderRadius: '6px',
+                                fontSize: '11.5px',
+                                fontWeight: '800',
+                                fontFamily: 'JetBrains Mono, monospace',
+                                background: Number(item.current) === 0 ? '#fee2e2' : '#fef3c7',
+                                color: Number(item.current) === 0 ? '#dc2626' : '#d97706',
+                                border: `1px solid ${Number(item.current) === 0 ? '#fca5a5' : '#fde68a'}`,
+                              }}
+                            >
                               {item.current}
                             </span>
                           </td>
-                          <td style={{ textAlign: 'right', fontSize: '11.5px', color: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}>
-                            {item.threshold}
+                          <td style={{ textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}>
+                            {item.threshold ?? 3}
                           </td>
                         </tr>
                       ))}

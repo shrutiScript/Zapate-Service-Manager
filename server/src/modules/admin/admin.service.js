@@ -166,12 +166,13 @@ export class AdminService {
     if (!shop) throw new Error('Shop not found');
 
     const { subscriptionService } = await import('../shops/subscription.service.js');
-    const [owner, staffCount, repairsCount, invoicesCount, subscription] = await Promise.all([
+    const [owner, staffCount, repairsCount, invoicesCount, subscription, recentLogins] = await Promise.all([
       User.findOne({ shopId: shop._id, role: 'SHOP_OWNER' }),
       User.countDocuments({ shopId: shop._id }),
       JobCard.countDocuments({ shopId: shop._id }),
       Invoice.countDocuments({ shopId: shop._id }),
       subscriptionService.getSubscriptionDetails(shop._id).catch(() => null),
+      LoginActivity.find({ shopId: shop._id }).sort({ loginAt: -1 }).limit(10).lean(),
     ]);
 
     const now = new Date();
@@ -193,6 +194,7 @@ export class AdminService {
       shop: shopObj,
       owner,
       subscription,
+      recentLogins: recentLogins || [],
       stats: {
         staffCount,
         repairsCount,

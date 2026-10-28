@@ -1,0 +1,370 @@
+{
+  "benchmark_version": "1.0.0",
+  "description": "Held-out verified mobile phone diagnostic benchmark cases for comparative evaluation of Baseline vs. Test-Guided Diagnostic Copilot.",
+  "cases": [
+    {
+      "case_id": "CASE_BENCH_001",
+      "device_brand": "Samsung",
+      "device_model": "Galaxy S21",
+      "initial_symptoms": "Phone dropped on tile floor and now does not charge at all. Charger plugged in but nothing happens.",
+      "ground_truth_fault": "CHARGING_PORT_SUB_BOARD_DAMAGE",
+      "category": "CHARGING_SUB_SYSTEM",
+      "simulated_bench_environment": {
+        "TEST_USB_AMMETER_CURRENT_DRAW": {
+          "result": "FAIL",
+          "observed_value": "0.000A flatline draw with zero handshake"
+        },
+        "TEST_CHARGING_PORT_MICROSCOPE_PIN_CHECK": {
+          "result": "FAIL",
+          "observed_value": "Bent and crushed CC1 pin inside Type-C port"
+        },
+        "TEST_SUB_BOARD_FLEX_CONTINUITY": {
+          "result": "PASS",
+          "observed_value": "0.8 Ohms across VBUS trace"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_002",
+      "device_brand": "Apple",
+      "device_model": "iPhone 11",
+      "initial_symptoms": "Phone gets extremely hot near middle motherboard and battery draining within 2 hours. Not charging properly.",
+      "ground_truth_fault": "CHARGING_IC_PMIC_CIRCUIT_FAULT",
+      "category": "MAINBOARD_POWER_MANAGEMENT",
+      "simulated_bench_environment": {
+        "TEST_USB_AMMETER_CURRENT_DRAW": {
+          "result": "FAIL",
+          "observed_value": "0.110A fake charge loop negotiation"
+        },
+        "TEST_CHARGING_PORT_MICROSCOPE_PIN_CHECK": {
+          "result": "PASS",
+          "observed_value": "Clean straight lightning contacts"
+        },
+        "TEST_THERMAL_CAMERA_BOARD_SWEEP": {
+          "result": "FAIL",
+          "observed_value": "Hydra IC glowing red at 74°C under 1.2A current limit"
+        },
+        "TEST_DIODE_MODE_VBUS_LINE": {
+          "result": "FAIL",
+          "observed_value": "0.015V short circuit to ground"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_003",
+      "device_brand": "Samsung",
+      "device_model": "Galaxy S22 Ultra AMOLED",
+      "initial_symptoms": "Display is black after drop impact. Phone still vibrates when power button held.",
+      "ground_truth_fault": "DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE",
+      "category": "DISPLAY_SUBSYSTEM",
+      "simulated_bench_environment": {
+        "TEST_CURRENT_DRAW_BOOT_VIBRATION": {
+          "result": "PASS",
+          "observed_value": "Device draws normal boot sequence 0.25A to 1.4A with haptic vibration confirmation"
+        },
+        "TEST_EXTERNAL_KNOWN_GOOD_DISPLAY": {
+          "result": "PASS",
+          "observed_value": "Test OEM AMOLED panel lights up with crisp image and responsive touch"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_004",
+      "device_brand": "Apple",
+      "device_model": "iPhone SE 2020 LCD",
+      "initial_symptoms": "Screen black after water splash. Phone turns on and receives calls, but display completely black.",
+      "ground_truth_fault": "DISPLAY_BACKLIGHT_CIRCUIT_BLOWN",
+      "category": "DISPLAY_SUBSYSTEM",
+      "simulated_bench_environment": {
+        "TEST_FLASHLIGHT_IMAGE_REFLECTION_CHECK": {
+          "result": "PASS",
+          "observed_value": "Faint Apple lockscreen clock visible under 45-degree LED beam"
+        },
+        "TEST_DIODE_MODE_BACKLIGHT_ANODE": {
+          "result": "FAIL",
+          "observed_value": "0.000V dead short on LED_ANODE line due to blown filter ferrite"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_005",
+      "device_brand": "Google",
+      "device_model": "Pixel 6 Pro",
+      "initial_symptoms": "Back cover pop out, swollen battery, phone heats while charging and drains fast.",
+      "ground_truth_fault": "BATTERY_SWELLING_SAFETY_CRITICAL",
+      "category": "POWER_STORAGE_SAFETY",
+      "simulated_bench_environment": {
+        "TEST_PHYSICAL_BATTERY_DIMENSION_CHECK": {
+          "result": "FAIL",
+          "observed_value": "Pouch expanded by 4.2mm thickness beyond housing safety tolerance"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_006",
+      "device_brand": "OnePlus",
+      "device_model": "OnePlus 9",
+      "initial_symptoms": "Submerged in water. Now dead phone, wont turn on, gets hot when plugged in.",
+      "ground_truth_fault": "LIQUID_CORROSION_AND_POWER_RAIL_SHORT",
+      "category": "LIQUID_DAMAGE",
+      "simulated_bench_environment": {
+        "TEST_MICROSCOPE_CORROSION_INSPECTION": {
+          "result": "FAIL",
+          "observed_value": "Heavy green copper oxide crust on VDD_MAIN decoupling capacitors"
+        },
+        "TEST_DIODE_MODE_MAIN_POWER_RAILS": {
+          "result": "FAIL",
+          "observed_value": "0.002V dead short on primary battery rail"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_007",
+      "device_brand": "Xiaomi",
+      "device_model": "Redmi Note 10",
+      "initial_symptoms": "Battery drain fast and phone shuts down at 25% charge. Bad backup.",
+      "ground_truth_fault": "BATTERY_DEGRADATION_CELL_FAILURE",
+      "category": "POWER_STORAGE",
+      "simulated_bench_environment": {
+        "TEST_BATTERY_INTERNAL_RESISTANCE_AND_CYCLES": {
+          "result": "FAIL",
+          "observed_value": "1140 cycles logged, 67% battery health, 185 mOhms internal impedance"
+        },
+        "TEST_BATTERY_VOLTAGE_LOAD_DROP": {
+          "result": "FAIL",
+          "observed_value": "Voltage collapses from 3.82V to 3.10V under 1.5A bench load"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_008",
+      "device_brand": "Apple",
+      "device_model": "iPhone 12",
+      "initial_symptoms": "Dropped on pavement, now stuck on logo and restarting continuously in bootloop.",
+      "ground_truth_fault": "CPU_RAM_BGA_JOINT_MICRO_FRACTURE",
+      "category": "CORE_PROCESSING",
+      "simulated_bench_environment": {
+        "TEST_MAINBOARD_FLEXION_PRESSURE_BOOT": {
+          "result": "PASS",
+          "observed_value": "Phone completes boot to passcode screen while 500g mechanical pressure applied over AP Sandwich"
+        },
+        "TEST_DFU_FASTBOOT_MODE_FLASH": {
+          "result": "FAIL",
+          "observed_value": "NAND flash aborts at 60% with Error 4013"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_009",
+      "device_brand": "Samsung",
+      "device_model": "Galaxy A52",
+      "initial_symptoms": "Boot loop after firmware update attempt interrupted. Stuck on logo.",
+      "ground_truth_fault": "CORRUPTED_FIRMWARE_NAND_FAULT",
+      "category": "FIRMWARE_STORAGE",
+      "simulated_bench_environment": {
+        "TEST_DFU_FASTBOOT_MODE_FLASH": {
+          "result": "PASS",
+          "observed_value": "Odin 4-file stock firmware partition flash completes 100% successfully"
+        },
+        "TEST_PANIC_LOG_ANALYSIS": {
+          "result": "PASS",
+          "observed_value": "File system superblock checksum mismatch in userdata partition"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_010",
+      "device_brand": "Apple",
+      "device_model": "iPhone 13",
+      "initial_symptoms": "Phone dropped on road. Charging failure, loose charging pin, cable not detected.",
+      "ground_truth_fault": "CHARGING_PORT_SUB_BOARD_DAMAGE",
+      "category": "CHARGING_SUB_SYSTEM",
+      "simulated_bench_environment": {
+        "TEST_CHARGING_PORT_MICROSCOPE_PIN_CHECK": {
+          "result": "FAIL",
+          "observed_value": "Broken ground spring tab and compacted lint obstruction in dock port"
+        },
+        "TEST_USB_AMMETER_CURRENT_DRAW": {
+          "result": "FAIL",
+          "observed_value": "0.000A flatline draw"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_011",
+      "device_brand": "Samsung",
+      "device_model": "Galaxy S20",
+      "initial_symptoms": "Dead phone completely dead wont turn on. Was charging overnight and stopped working.",
+      "ground_truth_fault": "PRIMARY_POWER_RAIL_SHORT_CIRCUIT",
+      "category": "MAINBOARD_POWER_MANAGEMENT",
+      "simulated_bench_environment": {
+        "TEST_DC_POWER_SUPPLY_BOOT_AMPERAGE": {
+          "result": "FAIL",
+          "observed_value": "Instant 3.8A current clamp trip at 4.0V on DC power supply before power button press"
+        },
+        "TEST_THERMAL_CAMERA_BOARD_SWEEP": {
+          "result": "FAIL",
+          "observed_value": "V_BAT decoupling capacitor C421 glowing at 92°C"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_012",
+      "device_brand": "Motorola",
+      "device_model": "Moto G82",
+      "initial_symptoms": "Phone dropped on bike ride. Shattered glass, purple bleeding ink spot, screen tuti gai.",
+      "ground_truth_fault": "DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE",
+      "category": "DISPLAY_SUBSYSTEM",
+      "simulated_bench_environment": {
+        "TEST_EXTERNAL_KNOWN_GOOD_DISPLAY": {
+          "result": "PASS",
+          "observed_value": "Test screen boots cleanly, confirms logic board is fully operational"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_013",
+      "device_brand": "Apple",
+      "device_model": "iPhone XS",
+      "initial_symptoms": "Phone heats while charging, thermal runaway warning, charging stopped at 80% with extreme heat.",
+      "ground_truth_fault": "CHARGING_IC_PMIC_CIRCUIT_FAULT",
+      "category": "MAINBOARD_POWER_MANAGEMENT",
+      "simulated_bench_environment": {
+        "TEST_USB_AMMETER_CURRENT_DRAW": {
+          "result": "FAIL",
+          "observed_value": "0.150A erratic fluctuation with 5V handshake freeze"
+        },
+        "TEST_CHARGING_PORT_MICROSCOPE_PIN_CHECK": {
+          "result": "PASS",
+          "observed_value": "Lightning pins clean and undamaged"
+        },
+        "TEST_THERMAL_CAMERA_BOARD_SWEEP": {
+          "result": "FAIL",
+          "observed_value": "Tigris charging IC reaching 81°C under charge current"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_014",
+      "device_brand": "Google",
+      "device_model": "Pixel 7",
+      "initial_symptoms": "Pani ma padyu in swimming pool, dead phone, won't turn on, water inside.",
+      "ground_truth_fault": "LIQUID_CORROSION_AND_POWER_RAIL_SHORT",
+      "category": "LIQUID_DAMAGE",
+      "simulated_bench_environment": {
+        "TEST_MICROSCOPE_CORROSION_INSPECTION": {
+          "result": "FAIL",
+          "observed_value": "Chlorine residue and green copper corrosion across display and battery connectors"
+        },
+        "TEST_DIODE_MODE_MAIN_POWER_RAILS": {
+          "result": "FAIL",
+          "observed_value": "0.040V low impedance short on VDD_MAIN"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_015",
+      "device_brand": "OnePlus",
+      "device_model": "OnePlus 10 Pro",
+      "initial_symptoms": "Battery utri jaay chhe very fast, 100 to 0 in 3 hours, bad backup.",
+      "ground_truth_fault": "BATTERY_DEGRADATION_CELL_FAILURE",
+      "category": "POWER_STORAGE",
+      "simulated_bench_environment": {
+        "TEST_BATTERY_INTERNAL_RESISTANCE_AND_CYCLES": {
+          "result": "FAIL",
+          "observed_value": "890 cycles, 71% battery capacity, 142 mOhms"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_016",
+      "device_brand": "Samsung",
+      "device_model": "Galaxy Z Flip 3",
+      "initial_symptoms": "Phone dropped and bent. Boot loop auto restart, keeps restarting at Samsung logo.",
+      "ground_truth_fault": "CPU_RAM_BGA_JOINT_MICRO_FRACTURE",
+      "category": "CORE_PROCESSING",
+      "simulated_bench_environment": {
+        "TEST_MAINBOARD_FLEXION_PRESSURE_BOOT": {
+          "result": "PASS",
+          "observed_value": "Board flex pressure stabilizes BGA balls and system reaches setup wizard"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_017",
+      "device_brand": "Realme",
+      "device_model": "Realme 8",
+      "initial_symptoms": "Battery fuli gai chhe, back cover popped out, phone swollen.",
+      "ground_truth_fault": "BATTERY_SWELLING_SAFETY_CRITICAL",
+      "category": "POWER_STORAGE_SAFETY",
+      "simulated_bench_environment": {
+        "TEST_PHYSICAL_BATTERY_DIMENSION_CHECK": {
+          "result": "FAIL",
+          "observed_value": "Pouch bloated to 8.7mm thickness (standard 4.5mm)"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_018",
+      "device_brand": "Apple",
+      "device_model": "iPhone 8 LCD",
+      "initial_symptoms": "Black screen display blank, phone rings and vibrates but no display.",
+      "ground_truth_fault": "DISPLAY_BACKLIGHT_CIRCUIT_BLOWN",
+      "category": "DISPLAY_SUBSYSTEM",
+      "simulated_bench_environment": {
+        "TEST_FLASHLIGHT_IMAGE_REFLECTION_CHECK": {
+          "result": "PASS",
+          "observed_value": "Faint desktop icons visible under intense oblique flashlight angle"
+        },
+        "TEST_DIODE_MODE_BACKLIGHT_ANODE": {
+          "result": "FAIL",
+          "observed_value": "OL (open loop) due to fractured backlight fuse FL4211"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_019",
+      "device_brand": "Vivo",
+      "device_model": "Vivo V23",
+      "initial_symptoms": "Charge nathi thatu, cable not detected, stopped charging after drop.",
+      "ground_truth_fault": "CHARGING_PORT_SUB_BOARD_DAMAGE",
+      "category": "CHARGING_SUB_SYSTEM",
+      "simulated_bench_environment": {
+        "TEST_USB_AMMETER_CURRENT_DRAW": {
+          "result": "FAIL",
+          "observed_value": "0.000A flatline"
+        },
+        "TEST_CHARGING_PORT_MICROSCOPE_PIN_CHECK": {
+          "result": "FAIL",
+          "observed_value": "Sheared VBUS pin pad on sub-board jack"
+        }
+      }
+    },
+    {
+      "case_id": "CASE_BENCH_020",
+      "device_brand": "Nothing",
+      "device_model": "Phone 1",
+      "initial_symptoms": "Phone dropped on road, completely dead, no signs of life, won't turn on.",
+      "ground_truth_fault": "PRIMARY_POWER_RAIL_SHORT_CIRCUIT",
+      "category": "MAINBOARD_POWER_MANAGEMENT",
+      "simulated_bench_environment": {
+        "TEST_DC_POWER_SUPPLY_BOOT_AMPERAGE": {
+          "result": "FAIL",
+          "observed_value": "2.9A instant short circuit before power trigger"
+        },
+        "TEST_MAINBOARD_FLEXION_PRESSURE_BOOT": {
+          "result": "FAIL",
+          "observed_value": "Device continues drawing 2.9A clamp short under flexion pressure"
+        },
+        "TEST_THERMAL_CAMERA_BOARD_SWEEP": {
+          "result": "FAIL",
+          "observed_value": "VDD_MAIN capacitor C421 glowing at 92°C"
+        },
+        "TEST_DIODE_MODE_MAIN_POWER_RAILS": {
+          "result": "FAIL",
+          "observed_value": "0.005V short to ground on VDD_MAIN"
+        }
+      }
+    }
+  ]
+}

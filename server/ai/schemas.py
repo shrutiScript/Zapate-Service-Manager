@@ -27,6 +27,8 @@ class DiagnosisRequest:
         repair_job_id=None,
         brand="",
         model="",
+        test_results=None,
+        what_if_simulation=None,
         **kwargs
     ):
         # Support brand / device_brand aliases
@@ -40,6 +42,10 @@ class DiagnosisRequest:
         self.confirmed_symptoms = confirmed_symptoms if confirmed_symptoms is not None else kwargs.get("confirmedSymptoms", [])
         self.follow_up_answers = follow_up_answers if follow_up_answers is not None else kwargs.get("followUpAnswers", {})
         
+        # Actual test results and what-if simulation requests
+        self.test_results = test_results if test_results is not None else kwargs.get("testResults", [])
+        self.what_if_simulation = what_if_simulation if what_if_simulation is not None else kwargs.get("whatIfSimulation", None)
+
         # Historical cases and inventory parts
         self.historical_cases = historical_cases if historical_cases is not None else kwargs.get("historicalCases", [])
         self.inventory_parts = inventory_parts if inventory_parts is not None else kwargs.get("inventoryParts", [])
@@ -53,6 +59,8 @@ class DiagnosisRequest:
         self.deviceModel = self.device_model
         self.confirmedSymptoms = self.confirmed_symptoms
         self.followUpAnswers = self.follow_up_answers
+        self.testResults = self.test_results
+        self.whatIfSimulation = self.what_if_simulation
         self.historicalCases = self.historical_cases
         self.inventoryParts = self.inventory_parts
         self.shopId = self.shop_id
@@ -73,6 +81,8 @@ class DiagnosisRequest:
             "symptoms": self.symptoms,
             "confirmed_symptoms": self.confirmed_symptoms,
             "follow_up_answers": self.follow_up_answers,
+            "test_results": self.test_results,
+            "what_if_simulation": self.what_if_simulation,
             "historical_cases": self.historical_cases,
             "inventory_parts": self.inventory_parts,
             "shop_id": self.shop_id,
@@ -238,3 +248,185 @@ class DiagnosisResponse:
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
+
+
+class DiagnosticTest:
+    """Represents a curated, validated bench diagnostic test."""
+    def __init__(
+        self,
+        test_id="",
+        name="",
+        tool_required="",
+        category="",
+        purpose="",
+        prerequisites=None,
+        safety_precautions=None,
+        procedure="",
+        expected_reading="",
+        fail_condition="",
+        bench_time_minutes=5,
+        applicable_categories=None,
+        applicable_device_models=None,
+        applicable_hypotheses=None,
+        possible_outcomes=None,
+        expected_observations=None,
+        outcome_impact=None,
+        rule_reference=""
+    ):
+        self.test_id = test_id
+        self.name = name
+        self.tool_required = tool_required
+        self.category = category
+        self.purpose = purpose
+        self.prerequisites = prerequisites or []
+        self.safety_precautions = safety_precautions or []
+        self.procedure = procedure
+        self.expected_reading = expected_reading
+        self.fail_condition = fail_condition
+        self.bench_time_minutes = bench_time_minutes
+        self.applicable_categories = applicable_categories or []
+        self.applicable_device_models = applicable_device_models or ["ALL"]
+        self.applicable_hypotheses = applicable_hypotheses or []
+        self.possible_outcomes = possible_outcomes or ["PASS", "FAIL", "INCONCLUSIVE", "NOT_PERFORMED"]
+        self.expected_observations = expected_observations or {}
+        self.outcome_impact = outcome_impact or {}
+        self.rule_reference = rule_reference
+
+    def to_dict(self):
+        return {
+            "test_id": self.test_id,
+            "testId": self.test_id,
+            "name": self.name,
+            "tool_required": self.tool_required,
+            "toolRequired": self.tool_required,
+            "category": self.category,
+            "purpose": self.purpose,
+            "prerequisites": self.prerequisites,
+            "safety_precautions": self.safety_precautions,
+            "safetyPrecautions": self.safety_precautions,
+            "procedure": self.procedure,
+            "expected_reading": self.expected_reading,
+            "expectedReading": self.expected_reading,
+            "fail_condition": self.fail_condition,
+            "failCondition": self.fail_condition,
+            "bench_time_minutes": self.bench_time_minutes,
+            "benchTimeMinutes": self.bench_time_minutes,
+            "applicable_categories": self.applicable_categories,
+            "applicable_device_models": self.applicable_device_models,
+            "applicable_hypotheses": self.applicable_hypotheses,
+            "possible_outcomes": self.possible_outcomes,
+            "possibleOutcomes": self.possible_outcomes,
+            "expected_observations": self.expected_observations,
+            "expectedObservations": self.expected_observations,
+            "outcome_impact": self.outcome_impact,
+            "outcomeImpact": self.outcome_impact,
+            "rule_reference": self.rule_reference,
+            "ruleReference": self.rule_reference
+        }
+
+    def __getitem__(self, item):
+        return getattr(self, item, None)
+
+
+class DiagnosticJourneyStep:
+    """Represents a discrete step in the explainable diagnostic timeline."""
+    def __init__(
+        self,
+        step_index=0,
+        step_type="INITIAL_EVALUATION",
+        title="",
+        description="",
+        test_id=None,
+        test_name=None,
+        test_result=None,
+        observed_value=None,
+        selection_reason=None,
+        hypotheses_ranking=None,
+        score_deltas=None,
+        remaining_uncertainties=None,
+        timestamp=None
+    ):
+        self.step_index = step_index
+        self.step_type = step_type
+        self.title = title
+        self.description = description
+        self.test_id = test_id
+        self.test_name = test_name
+        self.test_result = test_result
+        self.observed_value = observed_value
+        self.selection_reason = selection_reason
+        self.hypotheses_ranking = hypotheses_ranking or []
+        self.score_deltas = score_deltas or {}
+        self.remaining_uncertainties = remaining_uncertainties or []
+        self.timestamp = timestamp
+
+    def to_dict(self):
+        return {
+            "stepIndex": self.step_index,
+            "stepType": self.step_type,
+            "title": self.title,
+            "description": self.description,
+            "testId": self.test_id,
+            "testName": self.test_name,
+            "testResult": self.test_result,
+            "observedValue": self.observed_value,
+            "selectionReason": self.selection_reason,
+            "hypothesesRanking": self.hypotheses_ranking,
+            "scoreDeltas": self.score_deltas,
+            "remainingUncertainties": self.remaining_uncertainties,
+            "timestamp": self.timestamp
+        }
+
+
+class KnowledgeGapRecord:
+    """Represents an identified limitation or ambiguity in the diagnostic knowledge base."""
+    def __init__(
+        self,
+        gap_id="",
+        gap_type="INDISTINGUISHABLE_HYPOTHESES",
+        title="",
+        description="",
+        device_brand="",
+        device_model="",
+        symptom_codes=None,
+        competing_hypotheses=None,
+        missing_or_conflicting_evidence="",
+        relevant_rules=None,
+        relevant_tests=None,
+        suggested_expert_review="",
+        requires_authorization=True,
+        status="PENDING_REVIEW"
+    ):
+        self.gap_id = gap_id
+        self.gap_type = gap_type
+        self.title = title
+        self.description = description
+        self.device_brand = device_brand
+        self.device_model = device_model
+        self.symptom_codes = symptom_codes or []
+        self.competing_hypotheses = competing_hypotheses or []
+        self.missing_or_conflicting_evidence = missing_or_conflicting_evidence
+        self.relevant_rules = relevant_rules or []
+        self.relevant_tests = relevant_tests or []
+        self.suggested_expert_review = suggested_expert_review
+        self.requires_authorization = requires_authorization
+        self.status = status
+
+    def to_dict(self):
+        return {
+            "gapId": self.gap_id,
+            "gapType": self.gap_type,
+            "title": self.title,
+            "description": self.description,
+            "deviceBrand": self.device_brand,
+            "deviceModel": self.device_model,
+            "symptomCodes": self.symptom_codes,
+            "competingHypotheses": self.competing_hypotheses,
+            "missingOrConflictingEvidence": self.missing_or_conflicting_evidence,
+            "relevantRules": self.relevant_rules,
+            "relevantTests": self.relevant_tests,
+            "suggestedExpertReview": self.suggested_expert_review,
+            "requiresAuthorization": self.requires_authorization,
+            "status": self.status
+        }
+

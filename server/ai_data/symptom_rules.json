@@ -46,7 +46,8 @@
       "keywords": [
         "phone dropped", "dropped", "fell down", "phone padi gayu", "padi gayu", "giri gaya",
         "impact damage", "screen tuti", "tut gaya", "hit the floor", "crushed",
-        "bent phone", "physical drop", "fell from bike", "dropped on road", "fall"
+        "bent phone", "physical drop", "fell from bike", "dropped on road", "fall",
+        "drop", "drop impact", "impact", "dropped on floor"
       ],
       "risk_flags": ["BGA_FRACTURE_RISK", "FLEX_CABLE_TEAR_RISK"]
     },
@@ -79,7 +80,8 @@
       "keywords": [
         "black screen", "blank display", "no display", "screen light nathi avti",
         "display blank", "screen black", "vibrates but no display", "rings but black screen",
-        "screen nahi chal raha", "display completely black"
+        "screen nahi chal raha", "display completely black", "display is black", "black display",
+        "screen is black", "display black", "display dark"
       ],
       "risk_flags": ["BACKLIGHT_OR_OLED_POWER_RAIL_FAULT"]
     },

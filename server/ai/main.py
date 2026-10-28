@@ -78,6 +78,8 @@ def main():
             symptoms=parsed.get("symptoms", ""),
             confirmed_symptoms=parsed.get("confirmedSymptoms") or parsed.get("confirmed_symptoms") or [],
             follow_up_answers=parsed.get("followUpAnswers") or parsed.get("follow_up_answers") or {},
+            test_results=parsed.get("testResults") or parsed.get("test_results") or [],
+            what_if_simulation=parsed.get("whatIfSimulation") or parsed.get("what_if_simulation"),
             historical_cases=parsed.get("historicalCases") or parsed.get("historical_cases") or [],
             inventory_parts=parsed.get("inventoryParts") or parsed.get("inventory_parts") or []
         )

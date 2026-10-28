@@ -13,6 +13,7 @@ Coordinates the entire Hybrid AI Diagnosis workflow step-by-step:
   Step 8: Return Complete Structured Output
 """
 
+import copy
 from symptom_normalizer import SymptomNormalizer
 from rules_engine import RulesEngine
 from case_retrieval import CaseRetrievalEngine
@@ -20,6 +21,7 @@ from probability_engine import ProbabilityEngine
 from confidence_engine import ConfidenceEngine
 from followup_engine import FollowUpEngine
 from knowledge_retrieval import KnowledgeRetrievalEngine
+from diagnostic_test_planner import DiagnosticTestPlanner
 from schemas import DiagnosisRequest
 
 class DiagnosisAgent:
@@ -32,6 +34,7 @@ class DiagnosisAgent:
         self.confidence_engine = ConfidenceEngine()
         self.followup_engine = FollowUpEngine()
         self.knowledge_engine = KnowledgeRetrievalEngine()
+        self.test_planner = DiagnosticTestPlanner()
 
     def run_diagnosis(self, req):
         """
@@ -47,6 +50,8 @@ class DiagnosisAgent:
             follow_up_answers = req.get("followUpAnswers") or req.get("follow_up_answers") or {}
             historical_cases = req.get("historicalCases") or req.get("historical_cases") or []
             inventory_parts = req.get("inventoryParts") or req.get("inventory_parts") or []
+            test_results = req.get("testResults") or req.get("test_results") or []
+            what_if_sim = req.get("whatIfSimulation") or req.get("what_if_simulation")
         else:
             brand = req.device_brand or ""
             model = req.device_model or ""
@@ -55,6 +60,8 @@ class DiagnosisAgent:
             follow_up_answers = req.follow_up_answers or {}
             historical_cases = req.historical_cases or []
             inventory_parts = req.inventory_parts or []
+            test_results = getattr(req, "test_results", None) or getattr(req, "testResults", []) or []
+            what_if_sim = getattr(req, "what_if_simulation", None) or getattr(req, "whatIfSimulation", None)
 
         # ------------------------------------------------------------
         # STEP 1: Normalize symptoms (text -> standard codes)
@@ -79,6 +86,19 @@ class DiagnosisAgent:
         )
         candidate_categories = [c["category"] for c in candidate_evaluations]
 
+        # Snapshot baseline evaluations before actual test results for journey tracking
+        initial_evaluations = copy.deepcopy(candidate_evaluations)
+
+        # ------------------------------------------------------------
+        # STEP 2B: Apply Actual Test Result Evidence (If Provided)
+        # ------------------------------------------------------------
+        applied_test_trace = []
+        if test_results:
+            candidate_evaluations, applied_test_trace = self.test_planner.apply_test_evidence(
+                candidate_evaluations,
+                test_results
+            )
+
         # ------------------------------------------------------------
         # STEP 3: Retrieve Similar Historical Completed Repairs
         # ------------------------------------------------------------
@@ -102,6 +122,15 @@ class DiagnosisAgent:
         )
         top_hypothesis = ranked_hypotheses[0] if ranked_hypotheses else None
 
+        # Compute initial hypotheses ranking for journey comparison if test results were applied
+        initial_ranked = ranked_hypotheses
+        if test_results and initial_evaluations:
+            initial_ranked, _, _ = self.prob_engine.rank_and_normalize(
+                candidate_hypotheses=initial_evaluations,
+                historical_matches_summary=similar_cases_summary,
+                follow_up_boosts=follow_up_boosts
+            )
+
         # ------------------------------------------------------------
         # STEP 5: Determine Diagnostic Confidence Level
         # ------------------------------------------------------------
@@ -112,7 +141,7 @@ class DiagnosisAgent:
             device_brand=brand,
             device_model=model,
             historical_match_count=similar_cases_summary.total_matches,
-            follow_up_answered_count=len(follow_up_answers)
+            follow_up_answered_count=len(follow_up_answers) + len(test_results)
         )
 
         # ------------------------------------------------------------
@@ -126,7 +155,63 @@ class DiagnosisAgent:
             )
 
         # ------------------------------------------------------------
-        # STEP 7: Get Confirmation Tests, Repair Steps & Safety Alerts
+        # STEP 7: Adaptive Diagnostic Test Planner (Next Test Selection)
+        # ------------------------------------------------------------
+        test_plan = self.test_planner.select_next_test(
+            ranked_hypotheses=ranked_hypotheses,
+            symptoms=normalized_symptoms,
+            completed_tests=test_results,
+            device_brand=brand,
+            device_model=model,
+            confidence_result=confidence_result
+        )
+        recommended_next_test = test_plan.get("recommendedTest")
+
+        # ------------------------------------------------------------
+        # STEP 7B: Knowledge Gap Detection
+        # ------------------------------------------------------------
+        knowledge_gaps = self.test_planner.detect_knowledge_gaps(
+            ranked_hypotheses=ranked_hypotheses,
+            symptoms=normalized_symptoms,
+            completed_tests=test_results,
+            confidence_result=confidence_result,
+            device_brand=brand,
+            device_model=model
+        )
+
+        # ------------------------------------------------------------
+        # STEP 7C: Explainable Diagnostic Journey Timeline
+        # ------------------------------------------------------------
+        diagnostic_journey = self.test_planner.build_diagnostic_journey(
+            normalized_symptoms=normalized_symptoms,
+            initial_hypotheses=initial_ranked if test_results else ranked_hypotheses,
+            completed_tests=test_results,
+            current_hypotheses=ranked_hypotheses,
+            recommended_next_test=recommended_next_test
+        )
+
+        # ------------------------------------------------------------
+        # STEP 7D: What-if Diagnostic Simulation (If Requested)
+        # ------------------------------------------------------------
+        what_if_simulation_result = None
+        if what_if_sim:
+            sim_test_id = what_if_sim.get("testId") or what_if_sim.get("test_id")
+            sim_outcome = what_if_sim.get("hypotheticalOutcome") or what_if_sim.get("hypothetical_outcome") or what_if_sim.get("outcome") or "PASS"
+            sim_observed = what_if_sim.get("observedValue") or what_if_sim.get("observed_value") or ""
+            if sim_test_id:
+                what_if_simulation_result = self.test_planner.simulate_what_if(
+                    test_id=sim_test_id,
+                    hypothetical_outcome=sim_outcome,
+                    observed_value=sim_observed,
+                    current_hypotheses=ranked_hypotheses,
+                    prob_engine=self.prob_engine,
+                    completed_tests=test_results,
+                    device_brand=brand,
+                    device_model=model
+                )
+
+        # ------------------------------------------------------------
+        # STEP 7E: Get Confirmation Tests, Repair Steps & Safety Alerts
         # ------------------------------------------------------------
         test_keys = []
         if top_hypothesis:
@@ -177,7 +262,7 @@ class DiagnosisAgent:
         # ------------------------------------------------------------
         return {
             "status": "success",
-            "engine_name": "Zapate Hybrid Diagnosis Engine (Simple & Explainable)",
+            "engine_name": "Zapate AI Diagnostic Copilot (Adaptive Test Planner & Simulation)",
             "device": {
                 "brand": brand or "Unspecified",
                 "model": model or "Generic Smartphone"
@@ -189,6 +274,13 @@ class DiagnosisAgent:
             "followUpQuestions": follow_up_questions,
             "similarRepairs": similar_cases_summary.to_dict(),
             "recommendedTests": recommended_tests,
+            "recommendedNextTest": recommended_next_test,
+            "testPlan": test_plan,
+            "diagnosticJourney": diagnostic_journey,
+            "knowledgeGaps": knowledge_gaps,
+            "appliedTestResults": test_results,
+            "appliedTestTrace": applied_test_trace,
+            "whatIfSimulation": what_if_simulation_result,
             "repairGuidance": repair_guidance,
             "postRepairChecklist": post_repair_checklist,
             "partsEstimate": parts_estimate,
@@ -198,6 +290,7 @@ class DiagnosisAgent:
                 "totalHypothesesEvaluated": len(candidate_evaluations),
                 "totalRawScoreSum": round(total_raw_score, 1),
                 "scoreDifferenceTopTwo": round(score_diff, 1),
-                "appliedFollowUpAnswers": follow_up_answers
+                "appliedFollowUpAnswers": follow_up_answers,
+                "appliedTestCount": len(test_results)
             }
         }

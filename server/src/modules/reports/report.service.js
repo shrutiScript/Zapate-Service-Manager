@@ -94,26 +94,22 @@ export class ReportService {
       // 10. All invoices for cumulative receivables
       Invoice.find(filter).sort({ createdAt: -1 }),
 
-      // 11-14. Pipeline breakdown for that date
+      // 11-14. Active workshop ticket flow pipeline
       Repair.countDocuments({
         ...filter,
         status: { $in: ['Device Received', 'Diagnosis Pending', 'Diagnosis Completed', 'Waiting Approval', 'Received'] },
-        $or: [{ createdAt: dateWindow }, { updatedAt: dateWindow }],
       }),
       Repair.countDocuments({
         ...filter,
         status: { $in: ['Repair in Progress', 'Waiting Parts', 'Parts Ordered', 'In Progress'] },
-        $or: [{ createdAt: dateWindow }, { updatedAt: dateWindow }],
       }),
       Repair.countDocuments({
         ...filter,
         status: { $in: ['Ready for Delivery', 'Ready for Pickup', 'Quality Check'] },
-        $or: [{ createdAt: dateWindow }, { updatedAt: dateWindow }],
       }),
       Repair.countDocuments({
         ...filter,
         status: { $in: ['Delivered', 'Completed'] },
-        $or: [{ createdAt: dateWindow }, { updatedAt: dateWindow }],
       }),
 
       // 15. Payments recorded on that date using paymentDate / createdAt
@@ -145,6 +141,12 @@ export class ReportService {
     const dateSales = invoicesOnDate.reduce((sum, i) => sum + (i.total || 0), 0);
     const dateDueAmount = invoicesOnDate.reduce((sum, i) => sum + (i.dueAmount || 0), 0);
     const allPendingDueAmount = allInvoices.reduce((sum, i) => sum + (i.dueAmount || 0), 0);
+
+    const nowUtcMs = Date.now();
+    const localMs = nowUtcMs - (timezoneOffset || -330) * 60 * 1000;
+    const localToday = new Date(localMs);
+    const todayStr = `${localToday.getUTCFullYear()}-${String(localToday.getUTCMonth() + 1).padStart(2, '0')}-${String(localToday.getUTCDate()).padStart(2, '0')}`;
+    const isSelectedDateToday = selectedDate === todayStr;
 
     // Format payments recorded on that date
     let recentPayments = [];
@@ -178,6 +180,37 @@ export class ReportService {
           method: i.paymentMethod || 'UPI',
           status: 'Completed',
         }));
+    }
+
+    // Fallback: If viewing today and no payments were recorded yet today, show the latest workshop payments
+    if (recentPayments.length === 0 && isSelectedDateToday) {
+      const [latestPaymentsDocs, latestInvoicesDocs] = await Promise.all([
+        Payment.find(filter).sort({ paymentDate: -1, createdAt: -1 }).limit(5).lean(),
+        Invoice.find({ ...filter, paidAmount: { $gt: 0 } }).sort({ createdAt: -1 }).limit(5).lean(),
+      ]);
+
+      if (latestPaymentsDocs && latestPaymentsDocs.length > 0) {
+        recentPayments = latestPaymentsDocs.map((p) => {
+          const pDate = p.paymentDate || p.createdAt;
+          return {
+            date: pDate ? new Date(pDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Recent',
+            customer: p.customerName || 'Client',
+            amount: p.amount || 0,
+            method: p.paymentMethod || 'UPI',
+            status: 'Completed',
+            isRecentFallback: true,
+          };
+        });
+      } else if (latestInvoicesDocs && latestInvoicesDocs.length > 0) {
+        recentPayments = latestInvoicesDocs.map((i) => ({
+          date: i.createdAt ? new Date(i.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Recent',
+          customer: i.customerName || 'Client',
+          amount: i.paidAmount !== undefined ? i.paidAmount : (i.total || 0),
+          method: i.paymentMethod || 'UPI',
+          status: 'Completed',
+          isRecentFallback: true,
+        }));
+      }
     }
 
     // Format low stock alerts

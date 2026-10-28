@@ -527,7 +527,7 @@ export const ShopDetailsPage = () => {
               <div>
                 <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Registered Date</label>
                 <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a', marginTop: '2px' }}>
-                  {new Date(shop.createdAt).toLocaleString()}
+                  {formatDateDMY(shop.createdAt)} • {formatTime12h(shop.createdAt)}
                 </div>
               </div>
             </div>
@@ -595,14 +595,14 @@ export const ShopDetailsPage = () => {
 
               <div>
                 <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>GST Number</label>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a', marginTop: '2px', fontFamily: 'JetBrains Mono' }}>
+                <div style={{ fontSize: '13.5px', fontWeight: '600', color: shop.gstNumber ? '#0f172a' : '#64748b', marginTop: '2px', fontFamily: shop.gstNumber ? 'JetBrains Mono, monospace' : 'inherit' }}>
                   {shop.gstNumber || 'Not Registered'}
                 </div>
               </div>
 
               <div>
                 <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Invoice Prefix</label>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#2563eb', marginTop: '2px', fontFamily: 'JetBrains Mono' }}>
+                <div style={{ fontSize: '14px', fontWeight: '700', color: '#2563eb', marginTop: '2px', fontFamily: 'JetBrains Mono, monospace' }}>
                   {shop.invoicePrefix || 'INV-'}
                 </div>
               </div>
@@ -619,7 +619,7 @@ export const ShopDetailsPage = () => {
                 Login Activity Log
               </h3>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                Total: <strong>{shop.loginCount || 0} logins</strong>
+                Total: <strong>{recentLogins.length || shop.loginCount || 0} logins</strong>
               </p>
             </div>
           </div>
@@ -645,12 +645,12 @@ export const ShopDetailsPage = () => {
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>
                           <Clock size={13} style={{ color: '#64748b' }} />
-                          <span>{new Date(log.loginAt || log.createdAt).toLocaleString()}</span>
+                          <span>{formatDateDMY(log.loginAt || log.createdAt)} • {formatTime12h(log.loginAt || log.createdAt)}</span>
                         </div>
                       </td>
                       <td>
-                        <span style={{ fontSize: '11px', fontFamily: 'JetBrains Mono', color: '#64748b' }}>
-                          {log.ipAddress || '127.0.0.1'}
+                        <span style={{ fontSize: '11.5px', fontFamily: 'JetBrains Mono, monospace', color: '#475569', background: '#f1f5f9', padding: '2px 7px', borderRadius: '4px' }}>
+                          {log.ipAddress === '::1' ? '127.0.0.1 (Localhost)' : (log.ipAddress || '127.0.0.1')}
                         </span>
                       </td>
                     </tr>

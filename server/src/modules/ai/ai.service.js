@@ -2,9 +2,11 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import mongoose from 'mongoose';
 import { Repair } from '../repairs/repair.model.js';
 import { SparePart } from '../inventory/inventory.model.js';
 import { AiFeedback } from './aiFeedback.model.js';
+import { DiagnosticSession } from './diagnosticSession.model.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,6 +80,9 @@ export class AiService {
       }
     }
 
+    const testResults = payload.testResults || payload.test_results || [];
+    const whatIfSimulation = payload.whatIfSimulation || payload.what_if_simulation || null;
+
     const pythonPayload = {
       shopId: shopId ? shopId.toString() : null,
       repairJobId: repairJobId ? repairJobId.toString() : null,
@@ -86,6 +91,8 @@ export class AiService {
       symptoms,
       confirmedSymptoms,
       followUpAnswers,
+      testResults,
+      whatIfSimulation,
       historicalCases,
       inventoryParts,
     };
@@ -102,6 +109,35 @@ export class AiService {
     );
 
     pythonResult.costEstimate = dynamicCostEstimate;
+
+    // 4. Synchronize DiagnosticSession for traceability if repairJobId is present
+    if (shopId && repairJobId) {
+      try {
+        await DiagnosticSession.findOneAndUpdate(
+          { shopId, repairJobId },
+          {
+            $set: {
+              deviceBrand,
+              deviceModel,
+              symptoms,
+              confirmedSymptoms,
+              followUpAnswers,
+              diagnosticJourney: pythonResult.diagnosticJourney || [],
+              knowledgeGaps: pythonResult.knowledgeGaps || [],
+              latestDiagnosis: {
+                confidence: pythonResult.diagnosticConfidence,
+                hypotheses: pythonResult.hypotheses,
+                recommendedNextTest: pythonResult.recommendedNextTest,
+                updatedAt: new Date(),
+              },
+            },
+          },
+          { upsert: true, new: true }
+        );
+      } catch (syncErr) {
+        console.warn('[AiService] Failed to sync DiagnosticSession:', syncErr.message);
+      }
+    }
 
     return pythonResult;
   }
@@ -368,4 +404,267 @@ export class AiService {
     }
     return {};
   }
+
+  /**
+   * Records an actual bench test outcome performed by the technician.
+   * Validates result type, prevents duplicate submissions, updates evidence,
+   * recalculates fault scores using the Python engine, and logs to repair history.
+   */
+  async recordActualTestResult(payload, shopId, user = null) {
+    const {
+      repairJobId = null,
+      sessionId = null,
+      testId,
+      testName = '',
+      result,
+      observedValue = '',
+      notes = '',
+      deviceBrand = '',
+      deviceModel = '',
+      symptoms = '',
+    } = payload;
+
+    if (!testId) {
+      throw new Error('Test ID is required.');
+    }
+
+    const validResults = ['PASS', 'FAIL', 'OBSERVED_VALUE', 'INCONCLUSIVE', 'NOT_PERFORMED'];
+    const normalizedResult = (result || '').toUpperCase().trim();
+    if (!validResults.includes(normalizedResult)) {
+      throw new Error(`Invalid test result '${result}'. Allowed: ${validResults.join(', ')}`);
+    }
+
+    // 1. Locate or create DiagnosticSession
+    let session = null;
+    if (sessionId) {
+      session = await DiagnosticSession.findOne({ _id: sessionId, shopId });
+    } else if (repairJobId) {
+      session = await DiagnosticSession.findOne({ repairJobId, shopId });
+    }
+
+    if (!session) {
+      session = new DiagnosticSession({
+        shopId,
+        repairJobId: repairJobId || null,
+        deviceBrand,
+        deviceModel,
+        symptoms,
+        actualTestResults: [],
+        diagnosticJourney: [],
+        knowledgeGaps: [],
+      });
+    }
+
+    // 2. Prevent duplicate submissions for the same test on this session (Idempotency)
+    const isDuplicate = session.actualTestResults.some(
+      (t) => t.testId === testId && t.result === normalizedResult && t.observedValue === observedValue
+    );
+    if (isDuplicate) {
+      throw new Error(`Test '${testId}' with result '${normalizedResult}' has already been recorded for this session.`);
+    }
+
+    // 3. Append the validated actual test result
+    const newTestRecord = {
+      testId,
+      testName: testName || testId,
+      result: normalizedResult,
+      observedValue: (observedValue || '').trim(),
+      notes: (notes || '').trim(),
+      technicianId: user?._id || null,
+      technicianName: user?.name || 'Technician',
+      createdAt: new Date(),
+    };
+    session.actualTestResults.push(newTestRecord);
+
+    // 4. Update device info and symptoms if provided or pull from Repair
+    let resolvedBrand = deviceBrand || session.deviceBrand;
+    let resolvedModel = deviceModel || session.deviceModel;
+    let resolvedSymptoms = symptoms || session.symptoms;
+
+    let repairJob = null;
+    if (repairJobId) {
+      repairJob = await Repair.findOne({ _id: repairJobId, shopId });
+      if (repairJob) {
+        resolvedBrand = resolvedBrand || repairJob.device?.brand || '';
+        resolvedModel = resolvedModel || repairJob.device?.model || '';
+        resolvedSymptoms = resolvedSymptoms || repairJob.issue || '';
+      }
+    }
+
+    session.deviceBrand = resolvedBrand;
+    session.deviceModel = resolvedModel;
+    session.symptoms = resolvedSymptoms;
+
+    // 5. Re-evaluate diagnosis through Python engine with all accumulated actual test results
+    const diagnosisPayload = {
+      deviceBrand: resolvedBrand,
+      deviceModel: resolvedModel,
+      symptoms: resolvedSymptoms,
+      confirmedSymptoms: session.confirmedSymptoms || [],
+      followUpAnswers: session.followUpAnswers || {},
+      testResults: session.actualTestResults.map((t) => ({
+        test_id: t.testId,
+        result: t.result,
+        observed_value: t.observedValue,
+        notes: t.notes,
+        timestamp: t.createdAt,
+      })),
+      repairJobId,
+    };
+
+    const updatedDiagnosis = await this.runDiagnosis(diagnosisPayload, shopId);
+
+    // 6. Update session state
+    session.diagnosticJourney = updatedDiagnosis.diagnosticJourney || [];
+    session.knowledgeGaps = updatedDiagnosis.knowledgeGaps || [];
+    session.latestDiagnosis = {
+      confidence: updatedDiagnosis.diagnosticConfidence,
+      hypotheses: updatedDiagnosis.hypotheses,
+      recommendedNextTest: updatedDiagnosis.recommendedNextTest,
+      updatedAt: new Date(),
+    };
+    session.status = (updatedDiagnosis.knowledgeGaps && updatedDiagnosis.knowledgeGaps.length > 0)
+      ? 'KNOWLEDGE_GAP'
+      : 'TESTS_IN_PROGRESS';
+
+    await session.save();
+
+    // 7. Audit log in Repair Job Card if linked
+    if (repairJob) {
+      if (!repairJob.history) repairJob.history = [];
+      repairJob.history.push({
+        status: repairJob.status,
+        changedAt: new Date(),
+        notes: `AI Diagnostic Test Recorded: ${newTestRecord.testName} -> ${newTestRecord.result}${observedValue ? ` (${observedValue})` : ''}`,
+        updatedBy: user?.name || 'Technician',
+      });
+      await repairJob.save();
+    }
+
+    return {
+      session,
+      diagnosis: updatedDiagnosis,
+      recommendedNextTest: updatedDiagnosis.recommendedNextTest,
+      testPlan: updatedDiagnosis.testPlan,
+      diagnosticJourney: updatedDiagnosis.diagnosticJourney,
+      knowledgeGaps: updatedDiagnosis.knowledgeGaps,
+    };
+  }
+
+  /**
+   * Runs non-persistent what-if simulation exploring hypothetical test outcomes.
+   * NEVER saves or modifies database or repair records.
+   */
+  async runWhatIfSimulation(payload, shopId = null) {
+    const {
+      deviceBrand = '',
+      deviceModel = '',
+      symptoms = '',
+      confirmedSymptoms = [],
+      followUpAnswers = {},
+      completedTests = [],
+      testId,
+      hypotheticalOutcome = 'PASS',
+      observedValue = '',
+    } = payload;
+
+    if (!testId) {
+      throw new Error('Test ID is required for what-if simulation.');
+    }
+
+    const pythonPayload = {
+      shopId: shopId ? shopId.toString() : null,
+      deviceBrand,
+      deviceModel,
+      symptoms,
+      confirmedSymptoms,
+      followUpAnswers,
+      testResults: completedTests,
+      whatIfSimulation: {
+        testId,
+        hypotheticalOutcome,
+        observedValue,
+      },
+    };
+
+    const pythonResult = await this._invokePythonEngine(pythonPayload);
+    return pythonResult.whatIfSimulation;
+  }
+
+  /**
+   * Retrieves explainable diagnostic journey for a specific repair job or session.
+   */
+  async getDiagnosticJourney(identifier, shopId) {
+    if (!identifier || !mongoose.Types.ObjectId.isValid(identifier)) {
+      return [];
+    }
+    const session = await DiagnosticSession.findOne({
+      $or: [{ repairJobId: identifier }, { _id: identifier }],
+      shopId,
+    }).lean();
+
+    if (!session) {
+      return [];
+    }
+    return session.diagnosticJourney || [];
+  }
+
+  /**
+   * Retrieves knowledge gap records for authorized shop review.
+   */
+  async getKnowledgeGaps(shopId, status = null) {
+    const filter = { shopId };
+    const sessions = await DiagnosticSession.find(filter)
+      .select('deviceBrand deviceModel symptoms knowledgeGaps createdAt updatedAt')
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    const allGaps = [];
+    for (const s of sessions) {
+      for (const g of s.knowledgeGaps || []) {
+        if (!status || g.status === status) {
+          allGaps.push({
+            ...g,
+            sessionId: s._id,
+            deviceBrand: s.deviceBrand,
+            deviceModel: s.deviceModel,
+            symptoms: s.symptoms,
+          });
+        }
+      }
+    }
+    return allGaps;
+  }
+
+  /**
+   * Reviews and approves/dismisses a knowledge gap.
+   */
+  async reviewKnowledgeGap(gapId, action, reviewNotes, shopId, userId) {
+    const validActions = ['APPROVE', 'DISMISS'];
+    const normAction = (action || '').toUpperCase().trim();
+    if (!validActions.includes(normAction)) {
+      throw new Error("Action must be 'APPROVE' or 'DISMISS'.");
+    }
+
+    const session = await DiagnosticSession.findOne({
+      shopId,
+      'knowledgeGaps.gapId': gapId,
+    });
+
+    if (!session) {
+      throw new Error(`Knowledge gap '${gapId}' not found in workshop records.`);
+    }
+
+    const gap = session.knowledgeGaps.find((g) => g.gapId === gapId);
+    if (gap) {
+      gap.status = normAction === 'APPROVE' ? 'APPROVED' : 'DISMISSED';
+      gap.reviewedBy = userId;
+      gap.reviewNotes = reviewNotes || '';
+    }
+
+    await session.save();
+    return gap;
+  }
 }
+
+export const aiService = new AiService();

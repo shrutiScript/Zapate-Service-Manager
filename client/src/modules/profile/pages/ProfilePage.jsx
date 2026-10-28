@@ -342,13 +342,19 @@ export const ProfilePage = () => {
           const subShop = currentShop || user?.shop || {};
           const startDate = subShop.subscriptionStartDate || subShop.subscriptionHistory?.[0]?.startDate || subShop.createdAt;
           const expiresAt = subShop.subscriptionExpiresAt;
+          const serverTime = subShop.serverTime || new Date();
           const isExpired = (subShop.calculatedStatus || subShop.subscriptionStatus) === 'EXPIRED' ||
-            (expiresAt && new Date(expiresAt).getTime() <= Date.now());
+            (expiresAt && new Date(expiresAt).getTime() <= new Date(serverTime).getTime());
           const daysRemaining = isExpired
             ? 0
             : typeof subShop.daysRemaining === 'number'
             ? subShop.daysRemaining
-            : calculateRemainingDays(expiresAt);
+            : calculateRemainingDays(expiresAt, serverTime);
+          const isExpiringSoon = !isExpired && (
+            subShop.calculatedStatus === 'EXPIRING_SOON' ||
+            subShop.subscriptionStatus === 'EXPIRING_SOON' ||
+            daysRemaining <= 7
+          );
 
           return (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px' }}>

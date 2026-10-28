@@ -1,176 +1,829 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "test_procedures": {
     "TEST_USB_AMMETER_CURRENT_DRAW": {
       "name": "USB Power Delivery / Ammeter Current Draw Measurement",
       "tool_required": "USB-C/Lightning Digital Power Meter (FNIRSI / Sunshine)",
       "category": "ELECTRICAL_INSPECTION",
+      "purpose": "Measures baseline VBUS charging current negotiation to differentiate port/sub-board physical disconnects from PMIC faults and battery degradation.",
+      "prerequisites": [
+        "External calibrated 5V/9V digital USB meter connected",
+        "Known-good OEM USB-C or Lightning cable",
+        "Battery connected to logic board"
+      ],
+      "safety_precautions": [
+        "Do not connect unregulated DC voltage above 5.2V unless PD protocol negotiation is confirmed"
+      ],
       "procedure": "Connect phone to 5V/9V digital USB meter. Observe initial current handshake.",
       "expected_reading": "0.90A - 2.20A stable charging current (5V or 9V PD/QC).",
       "fail_condition": "0.000A draw (open line / blown fuse) or < 0.150A (fake charge / dead PMIC).",
-      "bench_time_minutes": 2
+      "bench_time_minutes": 2,
+      "applicable_categories": ["CHARGING_SUB_SYSTEM", "MAINBOARD_POWER_MANAGEMENT", "POWER_STORAGE"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "CHARGING_PORT_SUB_BOARD_DAMAGE",
+        "CHARGING_IC_PMIC_CIRCUIT_FAULT",
+        "BATTERY_DEGRADATION_CELL_FAILURE"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "OBSERVED_VALUE", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "0.90A - 2.20A stable fast-charge negotiation. Confirms intact port, sub-board, and PMIC handshake.",
+        "FAIL": "0.000A dead open circuit or < 0.150A fake charging draw indicating port or PMIC fault.",
+        "INCONCLUSIVE": "Current fluctuates randomly without settling on stable handshake.",
+        "NOT_PERFORMED": "Ammeter test skipped or equipment unavailable."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["BATTERY_DEGRADATION_CELL_FAILURE"],
+          "weakens": ["CHARGING_PORT_SUB_BOARD_DAMAGE", "CHARGING_IC_PMIC_CIRCUIT_FAULT"],
+          "score_delta": 25.0
+        },
+        "FAIL": {
+          "supports": ["CHARGING_PORT_SUB_BOARD_DAMAGE", "CHARGING_IC_PMIC_CIRCUIT_FAULT"],
+          "weakens": ["BATTERY_DEGRADATION_CELL_FAILURE"],
+          "score_delta": 30.0
+        }
+      },
+      "rule_reference": "IEEE 1725 / USB-IF Power Delivery Compliance Standard §4.2"
     },
     "TEST_CHARGING_PORT_MICROSCOPE_PIN_CHECK": {
       "name": "Microscope Visual Inspection of Charging Port Pins",
       "tool_required": "Stereo Microscope (7X - 45X) or Optical Loupe",
       "category": "PHYSICAL_INSPECTION",
+      "purpose": "Verifies mechanical integrity of connector pins to distinguish external debris/physical damage from motherboard-level PMIC defects.",
+      "prerequisites": [
+        "Device powered down",
+        "Proper ring LED illumination positioned inside port cavity"
+      ],
+      "safety_precautions": [
+        "Do not insert metal probes into energized port to avoid shorting VBUS to ground"
+      ],
       "procedure": "Inspect CC1/CC2, VBUS, D+, D-, and GND spring contacts for corrosion, bent pins, or lint obstruction.",
       "expected_reading": "Straight, clean gold-plated spring contacts with zero foreign debris.",
       "fail_condition": "Bent/broken spring contacts or black carbon/oxide deposits.",
-      "bench_time_minutes": 3
+      "bench_time_minutes": 3,
+      "applicable_categories": ["CHARGING_SUB_SYSTEM"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "CHARGING_PORT_SUB_BOARD_DAMAGE",
+        "CHARGING_IC_PMIC_CIRCUIT_FAULT"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Gold pins clean, straight, and properly aligned. Rules out mechanical port connector obstruction.",
+        "FAIL": "Bent, broken, recessed, or burnt carbonized pins clearly visible under optical magnification.",
+        "INCONCLUSIVE": "Obstruction cannot be fully assessed without chemical clearing.",
+        "NOT_PERFORMED": "Microscope inspection bypassed."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["CHARGING_IC_PMIC_CIRCUIT_FAULT"],
+          "weakens": ["CHARGING_PORT_SUB_BOARD_DAMAGE"],
+          "score_delta": 30.0
+        },
+        "FAIL": {
+          "supports": ["CHARGING_PORT_SUB_BOARD_DAMAGE"],
+          "weakens": ["CHARGING_IC_PMIC_CIRCUIT_FAULT"],
+          "score_delta": 40.0
+        }
+      },
+      "rule_reference": "IPC-A-610G Electronic Assemblies Acceptability Standard §10.3"
     },
     "TEST_SUB_BOARD_FLEX_CONTINUITY": {
       "name": "Sub-Board Interconnect Flex Cable Continuity Test",
       "tool_required": "Digital Multimeter (Continuity / Beeper Mode)",
       "category": "CONTINUITY_TEST",
+      "purpose": "Directly isolates mechanical failure of the drop-impacted sub-board flex cable from main logic board charging IC failure.",
+      "prerequisites": [
+        "Back housing opened",
+        "Interconnect FPC connector unseated from motherboard"
+      ],
+      "safety_precautions": [
+        "Disconnect battery prior to probing FPC connector contacts to prevent ESD discharge"
+      ],
       "procedure": "Probe test points on sub-board and corresponding pins on mainboard FPC connector.",
       "expected_reading": "< 1.5 Ohms resistance (clean continuous beep).",
       "fail_condition": "Infinite resistance (OL) indicating severed trace in flexible cable.",
-      "bench_time_minutes": 5
+      "bench_time_minutes": 5,
+      "applicable_categories": ["CHARGING_SUB_SYSTEM"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "CHARGING_PORT_SUB_BOARD_DAMAGE",
+        "CHARGING_IC_PMIC_CIRCUIT_FAULT"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "OBSERVED_VALUE", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Clean continuity (< 1.5 Ohms) across all VBUS and GND traces. Proves flex cable is fully intact.",
+        "FAIL": "Open loop (OL) on VBUS or CC lines confirming fractured flex ribbon trace from drop impact.",
+        "INCONCLUSIVE": "Intermittent resistance fluctuation during cable flexing.",
+        "NOT_PERFORMED": "Housing not opened."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["CHARGING_IC_PMIC_CIRCUIT_FAULT"],
+          "weakens": ["CHARGING_PORT_SUB_BOARD_DAMAGE"],
+          "score_delta": 35.0
+        },
+        "FAIL": {
+          "supports": ["CHARGING_PORT_SUB_BOARD_DAMAGE"],
+          "weakens": ["CHARGING_IC_PMIC_CIRCUIT_FAULT"],
+          "score_delta": 45.0
+        }
+      },
+      "rule_reference": "Samsung & Android Modular Hardware Architecture Repair Guide §2.1"
     },
     "TEST_DIODE_MODE_VBUS_LINE": {
       "name": "Diode Mode Value Test on VBUS / Primary Charging Rail",
       "tool_required": "Digital Multimeter in Diode Mode (Red probe to Ground, Black probe to Test Point)",
       "category": "DIODE_MODE_TEST",
+      "purpose": "Measures junction voltage drop of silicon protection diodes and PMIC input stage to detect shorted or blown charging ICs.",
+      "prerequisites": [
+        "Battery completely disconnected",
+        "Multimeter red probe securely clipped to logic board ground shield"
+      ],
+      "safety_precautions": [
+        "Never measure diode mode while battery or USB power is connected; will damage multimeter"
+      ],
       "procedure": "Place Red probe on motherboard ground shield. Place Black probe on VBUS test point / capacitor.",
       "expected_reading": "0.450V to 0.650V drop across silicon junction.",
       "fail_condition": "0.000V (dead short to ground) or OL (broken trace / open filter).",
-      "bench_time_minutes": 5
+      "bench_time_minutes": 5,
+      "applicable_categories": ["MAINBOARD_POWER_MANAGEMENT", "CHARGING_SUB_SYSTEM"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "CHARGING_IC_PMIC_CIRCUIT_FAULT",
+        "CHARGING_PORT_SUB_BOARD_DAMAGE",
+        "PRIMARY_POWER_RAIL_SHORT_CIRCUIT"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "OBSERVED_VALUE", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Diode reading between 0.450V and 0.650V. Proves VBUS input silicon path and ESD diodes are normal.",
+        "FAIL": "0.000V dead short or open line OL, confirming internal PMIC semiconductor junction breakdown.",
+        "INCONCLUSIVE": "Reading drifts out of normal range (e.g. 0.220V) without dead short.",
+        "NOT_PERFORMED": "Board probing not executed."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["CHARGING_PORT_SUB_BOARD_DAMAGE"],
+          "weakens": ["CHARGING_IC_PMIC_CIRCUIT_FAULT", "PRIMARY_POWER_RAIL_SHORT_CIRCUIT"],
+          "score_delta": 30.0
+        },
+        "FAIL": {
+          "supports": ["CHARGING_IC_PMIC_CIRCUIT_FAULT", "PRIMARY_POWER_RAIL_SHORT_CIRCUIT"],
+          "weakens": ["CHARGING_PORT_SUB_BOARD_DAMAGE"],
+          "score_delta": 40.0
+        }
+      },
+      "rule_reference": "Micro-soldering Diagnostic Handbook / Tristar-Hydra VBUS Specification v3"
     },
     "TEST_THERMAL_CAMERA_BOARD_SWEEP": {
       "name": "Thermal Imaging Camera Power Rail Fault Localization",
       "tool_required": "Infrared Thermal Camera (InfiRay / Seek Thermal / QianLi)",
       "category": "THERMAL_LOCALIZATION",
+      "purpose": "Identifies exact shorted decoupling capacitor or degraded PMIC silicon die through differential thermal gradient under controlled voltage injection.",
+      "prerequisites": [
+        "DC power supply current limit set to 1.5A maximum at 3.8V - 4.2V",
+        "Motherboard shield cans removed"
+      ],
+      "safety_precautions": [
+        "Do not inject voltage higher than nominal rail rating (1.8V lines will be destroyed if 4V injected)"
+      ],
       "procedure": "Inject 3.8V - 4.2V current-limited (1.5A) to battery rail and observe thermal heatmap hotspot.",
       "expected_reading": "Ambient temperature (< 35°C) across all components on standby.",
       "fail_condition": "Single capacitor or IC rapidly spikes to > 65°C - 100°C within 3 seconds.",
-      "bench_time_minutes": 8
+      "bench_time_minutes": 8,
+      "applicable_categories": ["MAINBOARD_POWER", "MAINBOARD_POWER_MANAGEMENT", "LIQUID_DAMAGE"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "PRIMARY_POWER_RAIL_SHORT_CIRCUIT",
+        "CHARGING_IC_PMIC_CIRCUIT_FAULT",
+        "LIQUID_CORROSION_AND_POWER_RAIL_SHORT"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Thermal profile uniform and cool; no concentrated thermal hotspot detected.",
+        "FAIL": "Clear thermal hotspot (> 65°C) pinpointing shorted capacitor or failing PMIC.",
+        "INCONCLUSIVE": "Diffuse warmth across multiple power inductors without single localized point.",
+        "NOT_PERFORMED": "Thermal inspection omitted."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["CHARGING_PORT_SUB_BOARD_DAMAGE", "BATTERY_DEGRADATION_CELL_FAILURE"],
+          "weakens": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT", "CHARGING_IC_PMIC_CIRCUIT_FAULT"],
+          "score_delta": 30.0
+        },
+        "FAIL": {
+          "supports": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT", "CHARGING_IC_PMIC_CIRCUIT_FAULT"],
+          "weakens": ["CHARGING_PORT_SUB_BOARD_DAMAGE"],
+          "score_delta": 45.0
+        }
+      },
+      "rule_reference": "IPC-7711/7721 Rework, Modification and Repair of Electronic Assemblies §3.4"
     },
     "TEST_BATTERY_INTERNAL_RESISTANCE_AND_CYCLES": {
       "name": "Battery Cell Health & Internal Resistance Analysis",
       "tool_required": "Battery Diagnostic Tool (i2C / JCID / QianLi) or Multimeter",
       "category": "BATTERY_TEST",
+      "purpose": "Measures electrochemical impedance and cycle count to establish whether battery degradation is the primary cause of drain or boot-looping.",
+      "prerequisites": [
+        "Battery uncoupled from motherboard",
+        "Diagnostic box calibrated"
+      ],
+      "safety_precautions": [
+        "Inspect pouch for mechanical punctures before connecting to battery test box"
+      ],
       "procedure": "Connect battery flex to test box or measure terminal voltage under 1A load.",
       "expected_reading": "> 80% maximum capacity, < 500 charge cycles, internal resistance < 45mΩ.",
       "fail_condition": "< 75% capacity, > 800 cycles, or resistance > 90mΩ.",
-      "bench_time_minutes": 4
+      "bench_time_minutes": 4,
+      "applicable_categories": ["POWER_STORAGE"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "BATTERY_DEGRADATION_CELL_FAILURE",
+        "CHARGING_IC_PMIC_CIRCUIT_FAULT",
+        "CORRUPTED_FIRMWARE_NAND_FAULT"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "OBSERVED_VALUE", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Health > 85%, cycle count < 400, internal resistance < 45mΩ. Confirms healthy battery cell.",
+        "FAIL": "Health < 75% or resistance > 90mΩ. Confirms cell chemical exhaustion requiring replacement.",
+        "INCONCLUSIVE": "Battery gas-gauge communication failed.",
+        "NOT_PERFORMED": "Battery test not conducted."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["CHARGING_IC_PMIC_CIRCUIT_FAULT", "CORRUPTED_FIRMWARE_NAND_FAULT"],
+          "weakens": ["BATTERY_DEGRADATION_CELL_FAILURE"],
+          "score_delta": 35.0
+        },
+        "FAIL": {
+          "supports": ["BATTERY_DEGRADATION_CELL_FAILURE"],
+          "weakens": ["CHARGING_IC_PMIC_CIRCUIT_FAULT", "CORRUPTED_FIRMWARE_NAND_FAULT"],
+          "score_delta": 40.0
+        }
+      },
+      "rule_reference": "UL 1642 Standard for Lithium Batteries / OEM Battery Health Specs"
     },
     "TEST_BATTERY_VOLTAGE_LOAD_DROP": {
       "name": "Battery Open-Circuit vs Load Voltage Drop Test",
       "tool_required": "Digital Multimeter in DC Volts",
       "category": "BATTERY_TEST",
+      "purpose": "Monitors voltage sag during CPU boot current spikes to detect high internal battery impedance causing sudden shutdowns.",
+      "prerequisites": [
+        "Battery charged to at least 3.7V resting",
+        "Multimeter probes attached to battery terminal pads"
+      ],
+      "safety_precautions": [
+        "Avoid shorting positive and negative battery terminals with meter probes"
+      ],
       "procedure": "Measure battery terminal voltage resting, then attempt boot.",
       "expected_reading": "Resting 3.8V - 4.2V; voltage drop during boot should not drop below 3.6V.",
       "fail_condition": "Terminal voltage instantly collapses below 3.2V when boot initiated.",
-      "bench_time_minutes": 3
+      "bench_time_minutes": 3,
+      "applicable_categories": ["POWER_STORAGE"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "BATTERY_DEGRADATION_CELL_FAILURE",
+        "PRIMARY_POWER_RAIL_SHORT_CIRCUIT"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "OBSERVED_VALUE", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Voltage maintains > 3.65V throughout boot sequence. Proves cell delivers required peak current.",
+        "FAIL": "Voltage drops sharply below 3.20V under boot load, causing instantaneous undervoltage cutoff.",
+        "INCONCLUSIVE": "Voltage fluctuates without triggering full boot cycle.",
+        "NOT_PERFORMED": "Load drop test bypassed."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT", "CPU_RAM_BGA_JOINT_MICRO_FRACTURE"],
+          "weakens": ["BATTERY_DEGRADATION_CELL_FAILURE"],
+          "score_delta": 25.0
+        },
+        "FAIL": {
+          "supports": ["BATTERY_DEGRADATION_CELL_FAILURE"],
+          "weakens": ["CPU_RAM_BGA_JOINT_MICRO_FRACTURE"],
+          "score_delta": 35.0
+        }
+      },
+      "rule_reference": "IEC 62133 Secondary Cells and Batteries Electrical Safety Standard"
     },
     "TEST_PHYSICAL_BATTERY_DIMENSION_CHECK": {
       "name": "Battery Physical Thickness & Outgassing Swell Inspection",
       "tool_required": "Vernier Caliper / Visual Alignment Check",
       "category": "SAFETY_INSPECTION",
+      "purpose": "Verifies whether chemical outgassing has caused dangerous pouch expansion threatening display lift or thermal runaway.",
+      "prerequisites": [
+        "Back cover removed",
+        "Battery pouch exposed"
+      ],
+      "safety_precautions": [
+        "CRITICAL: Do NOT press, pierce, or bend swollen battery. Prepare fireproof safety container."
+      ],
       "procedure": "Inspect lithium pouch on flat marble surface for pillowing or expansion.",
       "expected_reading": "Completely flat pouch (< 4.2mm OEM standard thickness).",
       "fail_condition": "Pouch is rounded or thicker than 4.8mm, or soft sponge-like texture.",
-      "bench_time_minutes": 2
+      "bench_time_minutes": 2,
+      "applicable_categories": ["POWER_STORAGE_SAFETY"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "BATTERY_SWELLING_SAFETY_CRITICAL",
+        "BATTERY_DEGRADATION_CELL_FAILURE"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "OBSERVED_VALUE", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Pouch is flat, uniform, and < 4.2mm thickness. No swelling or delamination.",
+        "FAIL": "Lithium cell visibly bloated > 4.8mm with pillowing and spongy texture. High safety hazard.",
+        "INCONCLUSIVE": "Slight expansion cannot be verified without caliper measurement.",
+        "NOT_PERFORMED": "Safety check skipped."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["BATTERY_DEGRADATION_CELL_FAILURE"],
+          "weakens": ["BATTERY_SWELLING_SAFETY_CRITICAL"],
+          "score_delta": 40.0
+        },
+        "FAIL": {
+          "supports": ["BATTERY_SWELLING_SAFETY_CRITICAL"],
+          "weakens": ["BATTERY_DEGRADATION_CELL_FAILURE"],
+          "score_delta": 50.0
+        }
+      },
+      "rule_reference": "UN 38.3 Lithium Battery Safety Transport and Inspection Specification"
     },
     "TEST_MICROSCOPE_CORROSION_INSPECTION": {
       "name": "Full Motherboard Optical Microscope Corrosion Sweep",
       "tool_required": "Stereo Microscope with Ring LED Light",
       "category": "CORROSION_INSPECTION",
+      "purpose": "Detects galvanic corrosion, green copper carbonate, and dendritic bridges under BGA packages and connectors.",
+      "prerequisites": [
+        "All RF shielding cans removed",
+        "Board cleaned of dust and surface lint"
+      ],
+      "safety_precautions": [
+        "ESD grounding strap required during board inspection"
+      ],
       "procedure": "Inspect under-fill borders, shield perimeters, and filter capacitor arrays for salt crusting.",
       "expected_reading": "Clean solder joints with bright metallic silver luster.",
       "fail_condition": "Green copper carbonate or white crusty lead-tin oxide deposits.",
-      "bench_time_minutes": 10
+      "bench_time_minutes": 10,
+      "applicable_categories": ["LIQUID_DAMAGE"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "LIQUID_CORROSION_AND_POWER_RAIL_SHORT",
+        "PRIMARY_POWER_RAIL_SHORT_CIRCUIT"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Zero corrosion or mineral deposit. All joints clean and shiny. Rules out liquid ingress.",
+        "FAIL": "Clear green copper carbonate or white oxide deposits bridging SMD components.",
+        "INCONCLUSIVE": "Minor flux residue without definitive evidence of liquid ingress.",
+        "NOT_PERFORMED": "Microscope sweep not performed."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT", "CHARGING_IC_PMIC_CIRCUIT_FAULT"],
+          "weakens": ["LIQUID_CORROSION_AND_POWER_RAIL_SHORT"],
+          "score_delta": 40.0
+        },
+        "FAIL": {
+          "supports": ["LIQUID_CORROSION_AND_POWER_RAIL_SHORT"],
+          "weakens": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT"],
+          "score_delta": 50.0
+        }
+      },
+      "rule_reference": "IPC/WHMA-A-620 Requirements and Acceptance for Cable and Harness Assemblies §13"
     },
     "TEST_DIODE_MODE_MAIN_POWER_RAILS": {
       "name": "Diode Mode Measurement of Primary Motherboard Power Rails",
       "tool_required": "Digital Multimeter (Diode Mode)",
       "category": "DIODE_MODE_TEST",
+      "purpose": "Measures junction drops on VDD_MAIN, VBAT, and 1.8V rails to locate low-impedance leaks or complete shorts to ground.",
+      "prerequisites": [
+        "Battery completely unplugged",
+        "Board discharged to 0V"
+      ],
+      "safety_precautions": [
+        "Verify zero residual capacitor voltage before touching probes to avoid meter overload"
+      ],
       "procedure": "Measure diode drop to ground on VDD_MAIN, VBAT, 1.8V_IO, and S2_REG rails.",
       "expected_reading": "VDD_MAIN: ~0.380V - 0.450V; VBAT: ~0.420V - 0.520V; 1.8V_IO: ~0.350V - 0.480V.",
       "fail_condition": "Any rail showing < 0.050V (low impedance leak) or 0.000V (dead short).",
-      "bench_time_minutes": 8
+      "bench_time_minutes": 8,
+      "applicable_categories": ["MAINBOARD_POWER", "LIQUID_DAMAGE"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "PRIMARY_POWER_RAIL_SHORT_CIRCUIT",
+        "LIQUID_CORROSION_AND_POWER_RAIL_SHORT",
+        "CHARGING_IC_PMIC_CIRCUIT_FAULT"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "OBSERVED_VALUE", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "All main power rails show normal silicon diode drop (0.350V - 0.520V). No short to ground.",
+        "FAIL": "Primary rail reads 0.000V or < 0.050V to ground, proving hard short circuit on main rail.",
+        "INCONCLUSIVE": "Reading is borderline (e.g. 0.280V) suggesting partial semiconductor degradation.",
+        "NOT_PERFORMED": "Rail measurements not completed."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["CHARGING_IC_PMIC_CIRCUIT_FAULT", "BATTERY_DEGRADATION_CELL_FAILURE"],
+          "weakens": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT", "LIQUID_CORROSION_AND_POWER_RAIL_SHORT"],
+          "score_delta": 35.0
+        },
+        "FAIL": {
+          "supports": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT", "LIQUID_CORROSION_AND_POWER_RAIL_SHORT"],
+          "weakens": ["CHARGING_PORT_SUB_BOARD_DAMAGE", "BATTERY_DEGRADATION_CELL_FAILURE"],
+          "score_delta": 45.0
+        }
+      },
+      "rule_reference": "Mobile Board Repair Standard Diode Mapping & Bus Fault Diagnostics v4.1"
     },
     "TEST_ULTRASONIC_CLEANING_AND_BAKING": {
       "name": "Ultrasonic Chemical De-oxidation & Dehydration",
       "tool_required": "Industrial Ultrasonic Cleaner + PCB Drying Oven",
       "category": "CHEMICAL_RESTO",
+      "purpose": "Cleans microscopic conductive salts beneath BGA under-fills and evaporates trapped moisture.",
+      "prerequisites": [
+        "All modular cameras, microphones, and screens detached from logic board",
+        "Logic board submerged in pure electronics-grade IPA"
+      ],
+      "safety_precautions": [
+        "Operate ultrasonic tank only in well-ventilated area away from open flame or spark sources"
+      ],
       "procedure": "Immerse stripped logic board in pure electronics-grade IPA at 40kHz, followed by 60°C dry cycle.",
       "expected_reading": "100% dry board with no flux or oxidation residue under BGA components.",
       "fail_condition": "Moisture residue remaining under shield cavities.",
-      "bench_time_minutes": 45
+      "bench_time_minutes": 45,
+      "applicable_categories": ["LIQUID_DAMAGE"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "LIQUID_CORROSION_AND_POWER_RAIL_SHORT"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Board completely de-oxidized and desiccated. Power rail impedance normalized.",
+        "FAIL": "Persistent residual oxidation bridges under un-fill or dead IC silicon.",
+        "INCONCLUSIVE": "Board clean but post-clean diode mode indicates unresolved IC failure.",
+        "NOT_PERFORMED": "Ultrasonic procedure not executed."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["LIQUID_CORROSION_AND_POWER_RAIL_SHORT"],
+          "weakens": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT"],
+          "score_delta": 30.0
+        },
+        "FAIL": {
+          "supports": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT"],
+          "weakens": ["LIQUID_CORROSION_AND_POWER_RAIL_SHORT"],
+          "score_delta": 25.0
+        }
+      },
+      "rule_reference": "IPC-CH-65B Guidelines for Cleaning of Printed Boards and Assemblies §5"
     },
     "TEST_EXTERNAL_KNOWN_GOOD_DISPLAY": {
       "name": "Known-Good OEM Test Display Assembly Substitution",
       "tool_required": "Known-Good Test Screen + Heating Pad",
       "category": "SUBSTITUTION_TEST",
+      "purpose": "Directly separates screen assembly damage (shattered matrix, cracked digitizer) from motherboard display driver or GPU failure.",
+      "prerequisites": [
+        "Known-working verified OEM test screen compatible with model",
+        "Original display flex unplugged"
+      ],
+      "safety_precautions": [
+        "Always disconnect battery before attaching or detaching display flex to prevent blowing backlight fuse"
+      ],
       "procedure": "Connect known-working OEM display panel flex directly to board without adhering.",
       "expected_reading": "Crisp display illumination, accurate color calibration, responsive 10-finger touch.",
       "fail_condition": "Same visual fault persists with known-good display (proves motherboard driver fault).",
-      "bench_time_minutes": 10
+      "bench_time_minutes": 10,
+      "applicable_categories": ["DISPLAY_SUBSYSTEM"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE",
+        "DISPLAY_BACKLIGHT_CIRCUIT_BLOWN",
+        "PRIMARY_POWER_RAIL_SHORT_CIRCUIT"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Known-good display lights up perfectly with touch working. Confirms fault is entirely in original display.",
+        "FAIL": "Known-good display also stays completely black or glitched. Proves fault is on logic board driver.",
+        "INCONCLUSIVE": "Display backlight lights up but image remains corrupted.",
+        "NOT_PERFORMED": "Substitution test not performed."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE"],
+          "weakens": ["DISPLAY_BACKLIGHT_CIRCUIT_BLOWN", "PRIMARY_POWER_RAIL_SHORT_CIRCUIT"],
+          "score_delta": 45.0
+        },
+        "FAIL": {
+          "supports": ["DISPLAY_BACKLIGHT_CIRCUIT_BLOWN", "PRIMARY_POWER_RAIL_SHORT_CIRCUIT"],
+          "weakens": ["DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE"],
+          "score_delta": 45.0
+        }
+      },
+      "rule_reference": "Apple & Android Display Diagnostics & Module Substitution Protocol v2"
     },
     "TEST_CURRENT_DRAW_BOOT_VIBRATION": {
       "name": "Blind Boot Vibration & Current Cycle Confirmation",
       "tool_required": "DC Power Supply with Analog/Digital Ammeter",
       "category": "BOOT_CYCLE_TEST",
+      "purpose": "Confirms phone logic board is successfully booting and alive despite completely black screen.",
+      "prerequisites": [
+        "Battery connected or DC power supply attached to battery terminal"
+      ],
+      "safety_precautions": [
+        "Ensure DC voltage does not exceed 4.2V"
+      ],
       "procedure": "Power phone via DC supply and observe boot current waveform (0 -> 150mA -> 800mA -> 1.5A).",
       "expected_reading": "Standard boot stepping current with haptic vibration confirmation.",
       "fail_condition": "Current freezes at fixed value or loops cyclically.",
-      "bench_time_minutes": 5
+      "bench_time_minutes": 5,
+      "applicable_categories": ["DISPLAY_SUBSYSTEM", "MAINBOARD_POWER"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE",
+        "PRIMARY_POWER_RAIL_SHORT_CIRCUIT",
+        "CPU_RAM_BGA_JOINT_MICRO_FRACTURE"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Haptic motor pulses, boot sound chimes, and current steps dynamically to 1.2A. Phone is fully alive.",
+        "FAIL": "No vibration, no dynamic stepping; ammeter reads 0mA or freezes at fixed low current.",
+        "INCONCLUSIVE": "Intermittent vibration without steady current draw.",
+        "NOT_PERFORMED": "Blind boot test skipped."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE"],
+          "weakens": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT", "CPU_RAM_BGA_JOINT_MICRO_FRACTURE"],
+          "score_delta": 35.0
+        },
+        "FAIL": {
+          "supports": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT", "CPU_RAM_BGA_JOINT_MICRO_FRACTURE"],
+          "weakens": ["DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE"],
+          "score_delta": 30.0
+        }
+      },
+      "rule_reference": "Smartphone Logic Board Power-Up State Machine Standard §3"
     },
     "TEST_FLASHLIGHT_IMAGE_REFLECTION_CHECK": {
       "name": "Angled Flashlight LCD Matrix Visual Inspection",
       "tool_required": "High-Lumen LED Torch / Inspection Flashlight",
       "category": "OPTICAL_TEST",
+      "purpose": "Distinguishes blown backlight driver from completely dead LCD/OLED panel by checking for faint liquid crystal ghosting.",
+      "prerequisites": [
+        "Phone powered on in dark room",
+        "High-lumen flashlight held at 30° - 45° angle"
+      ],
+      "safety_precautions": [
+        "Applicable only to LCD panels; NOT valid for OLED/AMOLED screens which have no separate backlight"
+      ],
       "procedure": "Hold flashlight at 30° - 45° angle directly against black display in darkened room.",
       "expected_reading": "Faint ghost graphics / clock / desktop icons visible under polarized illumination.",
       "fail_condition": "Completely blank liquid crystal matrix with zero polarization.",
-      "bench_time_minutes": 2
+      "bench_time_minutes": 2,
+      "applicable_categories": ["DISPLAY_SUBSYSTEM"],
+      "applicable_device_models": ["LCD_DEVICES_ONLY"],
+      "applicable_hypotheses": [
+        "DISPLAY_BACKLIGHT_CIRCUIT_BLOWN",
+        "DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Faint desktop clock / wallpaper graphics visible under torch light. Backlight circuit is blown.",
+        "FAIL": "Zero polarization or ghost image visible. Points to display assembly damage or OLED architecture.",
+        "INCONCLUSIVE": "Severe glass reflection obscures screen surface.",
+        "NOT_PERFORMED": "Flashlight inspection skipped."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["DISPLAY_BACKLIGHT_CIRCUIT_BLOWN"],
+          "weakens": ["DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE"],
+          "score_delta": 45.0
+        },
+        "FAIL": {
+          "supports": ["DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE"],
+          "weakens": ["DISPLAY_BACKLIGHT_CIRCUIT_BLOWN"],
+          "score_delta": 30.0
+        }
+      },
+      "rule_reference": "TFT-LCD Illumination & LED Driver Failure Mode Standard §5.2"
     },
     "TEST_DIODE_MODE_BACKLIGHT_ANODE": {
       "name": "Backlight Anode Power Rail Diode Reading",
       "tool_required": "Digital Multimeter (Diode Mode)",
       "category": "DIODE_MODE_TEST",
+      "purpose": "Measures diode drop on display connector anode pin to identify shorted boost diodes or open series ferrite beads.",
+      "prerequisites": [
+        "Battery disconnected",
+        "Display FPC cable unseated",
+        "Multimeter in Diode Mode (Red probe to ground)"
+      ],
+      "safety_precautions": [
+        "Do NOT probe anode rail when screen is connected and powered; boost voltage reaches 20V+ and will damage meter"
+      ],
       "procedure": "Probe Backlight Anode (BL_ANODE) pin on FPC display connector.",
       "expected_reading": "0.550V - 0.650V diode drop.",
       "fail_condition": "0.000V (anode filter shorted to ground) or OL (blown series ferrite bead).",
-      "bench_time_minutes": 5
+      "bench_time_minutes": 5,
+      "applicable_categories": ["DISPLAY_SUBSYSTEM"],
+      "applicable_device_models": ["LCD_DEVICES_ONLY"],
+      "applicable_hypotheses": [
+        "DISPLAY_BACKLIGHT_CIRCUIT_BLOWN",
+        "DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "OBSERVED_VALUE", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "0.550V - 0.650V diode reading. Backlight anode circuit and boost filter are intact.",
+        "FAIL": "0.000V dead short or OL open line. Proves blown backlight diode, boost coil, or filter.",
+        "INCONCLUSIVE": "Reading fluctuates due to loose probe contact.",
+        "NOT_PERFORMED": "Anode diode reading not measured."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE"],
+          "weakens": ["DISPLAY_BACKLIGHT_CIRCUIT_BLOWN"],
+          "score_delta": 35.0
+        },
+        "FAIL": {
+          "supports": ["DISPLAY_BACKLIGHT_CIRCUIT_BLOWN"],
+          "weakens": ["DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE"],
+          "score_delta": 45.0
+        }
+      },
+      "rule_reference": "Mobile Backlight Driver Architecture & Boost Converter Diagnostics v1.8"
     },
     "TEST_DC_POWER_SUPPLY_BOOT_AMPERAGE": {
       "name": "DC Bench Power Supply Boot Signature Waveform Analysis",
       "tool_required": "Regulated DC Power Supply (0 - 30V, 0 - 5A) with Fast Milliammeter",
       "category": "POWER_SIGNATURE_TEST",
+      "purpose": "Analyzes dynamic current consumption during initial boot sequence to separate dead short, PMIC handshake failure, and CPU/RAM hang.",
+      "prerequisites": [
+        "Battery uncoupled",
+        "OEM DC power supply boot cable hooked to battery connector",
+        "Voltage set to exactly 4.0V, current limit set to 2.0A"
+      ],
+      "safety_precautions": [
+        "Verify polarity carefully before switching on power supply; reversed polarity destroys PMIC immediately"
+      ],
       "procedure": "Connect boot cable to battery terminal, set voltage to 4.0V, press power button.",
       "expected_reading": "Normal boot curve: 60mA -> 120mA -> 350mA -> 800mA -> 1.2A dynamic fluctuation.",
       "fail_condition": "Instant short before button press, or stuck at 80mA (RAM missing), or 180mA (NAND missing).",
-      "bench_time_minutes": 5
+      "bench_time_minutes": 5,
+      "applicable_categories": ["MAINBOARD_POWER", "CORE_PROCESSING"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "PRIMARY_POWER_RAIL_SHORT_CIRCUIT",
+        "CPU_RAM_BGA_JOINT_MICRO_FRACTURE",
+        "CORRUPTED_FIRMWARE_NAND_FAULT"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "OBSERVED_VALUE", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Dynamic current fluctuation between 60mA and 1.2A. Proves PMIC, AP, RAM, and NAND are executing code.",
+        "FAIL": "Immediate 1.5A+ short before power button, or current freezes stubbornly at 80mA (RAM missing) / 180mA (NAND missing).",
+        "INCONCLUSIVE": "Erratic current stepping that resets every 4 seconds.",
+        "NOT_PERFORMED": "DC bench boot analysis skipped."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE", "BATTERY_DEGRADATION_CELL_FAILURE"],
+          "weakens": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT", "CPU_RAM_BGA_JOINT_MICRO_FRACTURE"],
+          "score_delta": 35.0
+        },
+        "FAIL": {
+          "supports": ["PRIMARY_POWER_RAIL_SHORT_CIRCUIT", "CPU_RAM_BGA_JOINT_MICRO_FRACTURE"],
+          "weakens": ["DISPLAY_ASSEMBLY_PHYSICAL_DAMAGE"],
+          "score_delta": 40.0
+        }
+      },
+      "rule_reference": "Mobile Power Management & AP Boot Signature Diagnostic Guide §7"
     },
     "TEST_MAINBOARD_FLEXION_PRESSURE_BOOT": {
       "name": "Board Mechanical Flexion / Direct Pressure Test",
       "tool_required": "Insulated Probe / Finger Pressure",
       "category": "BGA_INTERMITTENT_TEST",
+      "purpose": "Diagnoses micro-fractured solder ball joints under CPU/RAM BGA packages by testing if gentle physical compression restores connection.",
+      "prerequisites": [
+        "Logic board mounted in testing jig or chassis with power attached"
+      ],
+      "safety_precautions": [
+        "Do not apply excessive force that could snap the multi-layer PCB internal copper vias"
+      ],
       "procedure": "Apply light perpendicular pressure on CPU/RAM shield while triggering boot sequence.",
       "expected_reading": "Boot behavior is completely identical regardless of applied pressure.",
       "fail_condition": "Device boots or draws normal current ONLY while physical pressure is applied.",
-      "bench_time_minutes": 4
+      "bench_time_minutes": 4,
+      "applicable_categories": ["CORE_PROCESSING"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "CPU_RAM_BGA_JOINT_MICRO_FRACTURE",
+        "CORRUPTED_FIRMWARE_NAND_FAULT"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Device boots or draws normal current ONLY while physical pressure is applied to CPU/RAM shield, proving BGA fracture.",
+        "FAIL": "Physical pressure produces zero difference in boot behavior; fault is purely electrical or firmware.",
+        "INCONCLUSIVE": "Intermittent response not consistently repeatable.",
+        "NOT_PERFORMED": "Flexion test not performed."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["CPU_RAM_BGA_JOINT_MICRO_FRACTURE"],
+          "weakens": ["CORRUPTED_FIRMWARE_NAND_FAULT"],
+          "score_delta": 45.0
+        },
+        "FAIL": {
+          "supports": ["CORRUPTED_FIRMWARE_NAND_FAULT"],
+          "weakens": ["CPU_RAM_BGA_JOINT_MICRO_FRACTURE"],
+          "score_delta": 25.0
+        }
+      },
+      "rule_reference": "IPC-SM-785 Guidelines for Accelerated Reliability Testing of Surface Mount Solder Attachments"
     },
     "TEST_DFU_FASTBOOT_MODE_FLASH": {
       "name": "Hardware USB Interface Handshake in Recovery/DFU/EDL Mode",
       "tool_required": "Workstation PC with 3uTools / Odin / Fastboot CLI",
       "category": "SOFTWARE_INTERROGATION",
+      "purpose": "Determines whether low-level bootloader USB enumeration is intact, isolating software/firmware brick from BGA or power hardware failure.",
+      "prerequisites": [
+        "Workstation PC with official USB drivers installed",
+        "Known-good data cable"
+      ],
+      "safety_precautions": [
+        "Ensure host workstation has uninterrupted power (UPS) to avoid corrupting bootloader during flash"
+      ],
       "procedure": "Hold key combo to force low-level bootloader mode, observe USB VID/PID enumeration.",
       "expected_reading": "Clean USB enumeration with stable protocol handshake without disconnects.",
       "fail_condition": "USB descriptor error, Error 4013 (NAND error), or random USB disconnect during flash.",
-      "bench_time_minutes": 8
+      "bench_time_minutes": 8,
+      "applicable_categories": ["FIRMWARE_STORAGE", "CORE_PROCESSING"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "CORRUPTED_FIRMWARE_NAND_FAULT",
+        "CPU_RAM_BGA_JOINT_MICRO_FRACTURE"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Clean device enumeration in DFU/Fastboot mode; firmware flash succeeds completely without hardware error.",
+        "FAIL": "Flash aborts with NAND Error 4013, Error 9, or unexpected USB bus reset indicating physical NAND/RAM failure.",
+        "INCONCLUSIVE": "Device connects and immediately disconnects in loop.",
+        "NOT_PERFORMED": "Flash recovery test not attempted."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["CORRUPTED_FIRMWARE_NAND_FAULT"],
+          "weakens": ["CPU_RAM_BGA_JOINT_MICRO_FRACTURE"],
+          "score_delta": 40.0
+        },
+        "FAIL": {
+          "supports": ["CPU_RAM_BGA_JOINT_MICRO_FRACTURE"],
+          "weakens": ["CORRUPTED_FIRMWARE_NAND_FAULT"],
+          "score_delta": 35.0
+        }
+      },
+      "rule_reference": "Mobile Firmware Deployment & NAND Flash Integrity Diagnostics §8"
     },
     "TEST_PANIC_LOG_ANALYSIS": {
       "name": "Kernel Panic Crash Log Interrogation",
       "tool_required": "Crash Log Analyzer / Log Reader Tool",
       "category": "FIRMWARE_ANALYSIS",
+      "purpose": "Parses kernel panic crash logs to pinpoint failing I2C sensor bus lines, thermal sensors, or watchdog timeouts.",
+      "prerequisites": [
+        "Device capable of booting to OS or recovery diagnostic mode to dump logs"
+      ],
+      "safety_precautions": [
+        "Protect customer personal data in accordance with workshop privacy regulations"
+      ],
       "procedure": "Read panic.full or syslog crash dumps from crash log directory.",
       "expected_reading": "Clean logs with zero missing hardware sensor watchdog timeouts.",
       "fail_condition": "Panic string pointing to I2C sensor bus (e.g., prs0, mic1, gas_gauge, thermal_sensor).",
-      "bench_time_minutes": 5
+      "bench_time_minutes": 5,
+      "applicable_categories": ["FIRMWARE_STORAGE", "MAINBOARD_POWER_MANAGEMENT"],
+      "applicable_device_models": ["ALL"],
+      "applicable_hypotheses": [
+        "CORRUPTED_FIRMWARE_NAND_FAULT",
+        "CPU_RAM_BGA_JOINT_MICRO_FRACTURE"
+      ],
+      "possible_outcomes": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_PERFORMED"],
+      "expected_observations": {
+        "PASS": "Panic log identifies specific failing sensor line (e.g. thermal sensor or charging gas gauge) or pure OS crash.",
+        "FAIL": "Logs indicate memory address translation fault (kernel panic watchdog) pointing to AP/RAM failure.",
+        "INCONCLUSIVE": "Crash log corrupted or truncated.",
+        "NOT_PERFORMED": "Logs not accessible."
+      },
+      "outcome_impact": {
+        "PASS": {
+          "supports": ["CORRUPTED_FIRMWARE_NAND_FAULT"],
+          "weakens": ["CPU_RAM_BGA_JOINT_MICRO_FRACTURE"],
+          "score_delta": 30.0
+        },
+        "FAIL": {
+          "supports": ["CPU_RAM_BGA_JOINT_MICRO_FRACTURE"],
+          "weakens": ["CORRUPTED_FIRMWARE_NAND_FAULT"],
+          "score_delta": 30.0
+        }
+      },
+      "rule_reference": "POSIX / Darwin Kernel Panic Diagnostic Specification §6.1"
     }
   }
 }
