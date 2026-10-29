@@ -1262,6 +1262,9 @@ export const PosCheckoutPage = () => {
       {/* Printable Receipt Modal */}
       {receiptInvoice && (
         <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setReceiptInvoice(null);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
@@ -1272,10 +1275,9 @@ export const PosCheckoutPage = () => {
             justifyContent: 'center',
             zIndex: 200,
             padding: '16px',
-            overflowY: 'auto',
           }}
         >
-          <div style={{ maxWidth: '580px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ maxWidth: '620px', width: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
             <InvoiceReceiptView
               invoice={receiptInvoice}
               onClose={() => setReceiptInvoice(null)}

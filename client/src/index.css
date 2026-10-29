@@ -1701,10 +1701,14 @@ a {
   flex-direction: column;
   gap: 12px;
   width: 100%;
+  max-height: 92vh;
+  min-height: 0;
+  box-sizing: border-box;
 }
 
 .receipt-modal-wrapper.standalone {
   margin: 0 auto;
+  max-height: none;
 }
 
 /* Action Header Bar */
@@ -1712,11 +1716,16 @@ a {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   background: #1e293b;
   color: #ffffff;
   padding: 10px 16px;
   border-radius: var(--radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 .receipt-action-left {
@@ -1750,6 +1759,7 @@ a {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .receipt-close-btn {
@@ -1760,24 +1770,56 @@ a {
   color: #ffffff;
 }
 
-/* Receipt Paper Card */
+/* Receipt Paper Card Container with Dedicated Smooth Scrolling */
 .receipt-card-container {
-  display: flex;
-  justify-content: center;
+  display: block;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(92vh - 65px);
+  padding: 4px 10px 40px 10px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.receipt-modal-wrapper.standalone .receipt-card-container {
+  overflow-y: visible;
+  max-height: none;
+  padding: 0 0 40px 0;
+}
+
+.receipt-card-container::-webkit-scrollbar {
+  width: 6px;
+}
+.receipt-card-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.receipt-card-container::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 999px;
+}
+.receipt-card-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
 }
 
 .receipt-paper {
   background: #ffffff;
   color: #0f172a;
   width: 100%;
-  max-width: 480px;
-  padding: 28px 24px;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 28px 24px 32px 24px;
   border-radius: var(--radius-lg);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.4;
   box-sizing: border-box;
+  height: auto;
+  min-height: fit-content;
 }
 
 /* Shop Header */

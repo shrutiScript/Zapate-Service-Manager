@@ -5,9 +5,9 @@ const PurchaseItemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   sku: { type: String },
   category: { type: String },
-  quantity: { type: Number, required: true },
-  purchasePrice: { type: Number, required: true },
-  totalAmount: { type: Number, required: true },
+  quantity: { type: Number, required: true, default: 1 },
+  purchasePrice: { type: Number, required: true, default: 0 },
+  totalAmount: { type: Number, required: true, default: 0 },
 });
 
 const PurchaseSchema = new mongoose.Schema(
@@ -18,10 +18,10 @@ const PurchaseSchema = new mongoose.Schema(
     items: [PurchaseItemSchema],
     subtotal: { type: Number, default: 0 },
     taxAmount: { type: Number, default: 0 },
-    totalAmount: { type: Number, required: true },
+    totalAmount: { type: Number, required: true, default: 0 },
     paidAmount: { type: Number, default: 0 },
     pendingBalance: { type: Number, default: 0 },
-    paymentStatus: { type: String, enum: ['Paid', 'Partial', 'Unpaid'], default: 'Paid' },
+    paymentStatus: { type: String, enum: ['Paid', 'Partial', 'Unpaid', 'PAID', 'PARTIAL', 'UNPAID'], default: 'Paid' },
     shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop' },
   },
   { timestamps: true }

@@ -365,8 +365,9 @@ export const InventoryShelfPage = () => {
 
     setIsSaving(true);
     try {
-      // 1. Create Purchase Order Record
+      // 1. Create Purchase Order Record (Backend automatically increments stock & ledger)
       await api.post('/purchases', {
+        supplier: purchaseForm.supplierId,
         supplierId: purchaseForm.supplierId,
         supplierName: selectedSupplier?.name || selectedSupplier?.supplierName || 'Vendor',
         items: [
@@ -374,19 +375,15 @@ export const InventoryShelfPage = () => {
             partId: purchaseForm.selectedPartId,
             name: selectedPart?.name || 'Spare Part',
             quantity: qty,
+            purchasePrice: cost,
             unitCost: cost,
+            totalAmount: qty * cost,
             totalCost: qty * cost,
           },
         ],
         totalAmount: qty * cost,
-        paymentStatus: 'PAID',
-      });
-
-      // 2. Automatically Increase Inventory Stock Quantity!
-      const currentQty = selectedPart ? selectedPart.qty : 0;
-      await api.patch(`/inventory/${purchaseForm.selectedPartId}`, {
-        quantity: currentQty + qty,
-        purchasePrice: cost,
+        paidAmount: qty * cost,
+        paymentStatus: 'Paid',
       });
 
       toast.success(`Stock Purchase Confirmed! Increased stock of "${selectedPart?.name}" by +${qty} units.`);

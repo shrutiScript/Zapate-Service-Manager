@@ -558,8 +558,23 @@ export const PaymentLedgerPage = () => {
 
       {/* View Full Invoice Receipt Modal */}
       {viewInvoiceModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
-          <div className="card" style={{ maxWidth: '680px', width: '100%', padding: '0', background: '#ffffff', borderRadius: '12px', overflow: 'hidden', maxHeight: '90vh' }}>
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setViewInvoiceModal(null);
+          }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '16px',
+          }}
+        >
+          <div style={{ maxWidth: '620px', width: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
             <InvoiceReceiptView invoice={viewInvoiceModal} onClose={() => setViewInvoiceModal(null)} />
           </div>
         </div>

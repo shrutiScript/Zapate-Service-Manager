@@ -16,17 +16,79 @@ export class PurchaseService {
     return p;
   }
 
-  async create(data, shopId = null) {
-    const count = await Purchase.countDocuments(shopId ? { shopId } : {});
-    const invoiceNumber = `PO-${(count + 1).toString().padStart(4, '0')}`;
+  async generateUniquePoNumber(shopId = null) {
+    const totalCount = await Purchase.countDocuments();
+    let seq = totalCount + 1;
+    let attempts = 0;
 
-    const items = data.items || [];
+    while (attempts < 100) {
+      const candidate = `PO-${String(seq).padStart(4, '0')}`;
+      const exists = await Purchase.findOne({ invoiceNumber: candidate });
+      if (!exists) {
+        return candidate;
+      }
+      seq++;
+      attempts++;
+    }
+
+    const ts = Date.now().toString().slice(-6);
+    return `PO-${ts}`;
+  }
+
+  async create(data, shopId = null) {
+    let invoiceNumber = data.invoiceNumber;
+    if (!invoiceNumber) {
+      invoiceNumber = await this.generateUniquePoNumber(shopId);
+    } else {
+      const exists = await Purchase.findOne({ invoiceNumber });
+      if (exists) {
+        invoiceNumber = await this.generateUniquePoNumber(shopId);
+      }
+    }
+
+    const supplierId = data.supplier || data.supplierId || null;
+
+    const rawItems = Array.isArray(data.items) ? data.items : [];
+    const items = rawItems.map((item) => {
+      const quantity = Math.max(1, Number(item.quantity || 1));
+      const purchasePrice = Number(
+        item.purchasePrice !== undefined
+          ? item.purchasePrice
+          : item.unitCost !== undefined
+          ? item.unitCost
+          : 0
+      );
+      const totalAmount = Number(
+        item.totalAmount !== undefined
+          ? item.totalAmount
+          : item.totalCost !== undefined
+          ? item.totalCost
+          : purchasePrice * quantity
+      );
+
+      return {
+        ...item,
+        quantity,
+        purchasePrice,
+        totalAmount,
+      };
+    });
+
     const subtotal = items.reduce((sum, i) => sum + (i.purchasePrice || 0) * (i.quantity || 1), 0);
-    const taxAmount = data.taxAmount || 0;
-    const totalAmount = subtotal + taxAmount;
-    const paidAmount = data.paidAmount !== undefined ? data.paidAmount : totalAmount;
+    const taxAmount = Number(data.taxAmount || 0);
+    const totalAmount = data.totalAmount !== undefined ? Number(data.totalAmount) : subtotal + taxAmount;
+    const paidAmount = data.paidAmount !== undefined ? Number(data.paidAmount) : totalAmount;
     const pendingBalance = Math.max(0, totalAmount - paidAmount);
-    const paymentStatus = pendingBalance === 0 ? 'Paid' : paidAmount > 0 ? 'Partial' : 'Unpaid';
+
+    let paymentStatus = 'Paid';
+    if (data.paymentStatus) {
+      const s = String(data.paymentStatus).toUpperCase();
+      if (s === 'UNPAID') paymentStatus = 'Unpaid';
+      else if (s === 'PARTIAL' || s === 'PARTIALLY PAID') paymentStatus = 'Partial';
+      else paymentStatus = 'Paid';
+    } else {
+      paymentStatus = pendingBalance === 0 ? 'Paid' : paidAmount > 0 ? 'Partial' : 'Unpaid';
+    }
 
     // Auto-increment inventory stock scoped to shopId
     for (const item of items) {
@@ -65,8 +127,8 @@ export class PurchaseService {
     }
 
     // Update supplier ledger scoped to shopId
-    if (data.supplier) {
-      const sup = await Supplier.findOne({ _id: data.supplier, ...(shopId ? { shopId } : {}) });
+    if (supplierId) {
+      const sup = await Supplier.findOne({ _id: supplierId, ...(shopId ? { shopId } : {}) });
       if (sup) {
         sup.totalPurchased = (sup.totalPurchased || 0) + totalAmount;
         sup.outstandingBalance = (sup.outstandingBalance || 0) + pendingBalance;
@@ -75,8 +137,8 @@ export class PurchaseService {
     }
 
     return Purchase.create({
-      invoiceNumber: data.invoiceNumber || invoiceNumber,
-      supplier: data.supplier,
+      invoiceNumber,
+      supplier: supplierId,
       supplierName: data.supplierName || 'Primary Supplier',
       items,
       subtotal,

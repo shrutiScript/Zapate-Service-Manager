@@ -1964,11 +1964,14 @@ export const RepairBoardPage = () => {
       {/* PRINTABLE RECEIPT MODAL */}
       {receiptInvoice && (
         <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setReceiptInvoice(null);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
             background: 'rgba(15, 23, 42, 0.75)',
-            backdropFilter: 'blur(4px)',
+            backdropFilter: 'blur(5px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1976,7 +1979,7 @@ export const RepairBoardPage = () => {
             padding: '16px',
           }}
         >
-          <div style={{ maxWidth: '620px', width: '100%', maxHeight: '95vh', overflowY: 'auto' }}>
+          <div style={{ maxWidth: '620px', width: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
             <InvoiceReceiptView invoice={receiptInvoice} onClose={() => setReceiptInvoice(null)} />
           </div>
         </div>
