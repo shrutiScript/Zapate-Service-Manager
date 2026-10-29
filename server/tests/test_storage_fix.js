@@ -1,5 +1,5 @@
 // Test verification script for SafeStorage sanitization
-import { sanitizeForStorage } from '../client/src/utils/storage.js';
+import { sanitizeForStorage } from '../../client/src/utils/storage.js';
 
 console.log('Testing sanitizeForStorage with large base64 logo...');
 

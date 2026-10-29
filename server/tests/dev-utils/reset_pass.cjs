@@ -1,6 +1,5 @@
-const path = require('path');
-const mongoose = require(path.join(__dirname, '../server/node_modules/mongoose'));
-const bcrypt = require(path.join(__dirname, '../server/node_modules/bcryptjs'));
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 async function resetPass() {
   await mongoose.connect('mongodb://127.0.0.1:27017/repairflow_db');

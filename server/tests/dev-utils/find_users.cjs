@@ -1,5 +1,4 @@
-const path = require('path');
-const mongoose = require(path.join(__dirname, '../server/node_modules/mongoose'));
+const mongoose = require('mongoose');
 
 async function findUsers() {
   await mongoose.connect('mongodb://127.0.0.1:27017/repairflow_db');
