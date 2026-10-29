@@ -28,6 +28,7 @@ import {
   Sliders,
   DollarSign,
   ExternalLink,
+  X,
 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext.jsx';
 import { toast } from 'sonner';
